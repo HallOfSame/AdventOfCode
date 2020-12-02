@@ -1,4 +1,6 @@
-﻿using DayOne.Enums;
+﻿using System.Collections.Generic;
+
+using DayOne.Enums;
 
 namespace DayOne.Models
 {
@@ -6,12 +8,10 @@ namespace DayOne.Models
     {
         #region Constructors
 
-        public MathematicOperation(T opOne,
-                                   T opTwo,
+        public MathematicOperation(List<T> ops,
                                    MathematicOperationType opType)
         {
-            OperandOne = opOne;
-            OperandTwo = opTwo;
+            Operands = ops;
             OperationType = opType;
         }
 
@@ -19,9 +19,7 @@ namespace DayOne.Models
 
         #region Instance Properties
 
-        public T OperandOne { get; }
-
-        public T OperandTwo { get; }
+        public List<T> Operands { get; }
 
         public MathematicOperationType OperationType { get; }
 

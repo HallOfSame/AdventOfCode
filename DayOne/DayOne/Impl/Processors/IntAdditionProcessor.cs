@@ -21,6 +21,17 @@ namespace DayOne.Impl.Processors
 
         #region Instance Methods
 
+        protected override T ProcessInternal<T>(MathematicOperation<T> mathematicOperation)
+        {
+            var sum = 0;
+
+            foreach (var op in mathematicOperation.Operands)
+                sum += (int)(object)op;
+
+            return (T)Convert.ChangeType(sum,
+                                         typeof(T));
+        }
+
         protected override void ValidateOperation<T>(MathematicOperation<T> mathematicOperation)
         {
             if (typeof(T) != typeof(int))
@@ -29,16 +40,6 @@ namespace DayOne.Impl.Processors
             }
 
             base.ValidateOperation(mathematicOperation);
-        }
-
-        protected override T ProcessInternal<T>(MathematicOperation<T> mathematicOperation)
-        {
-            var opOne = (int)(object)mathematicOperation.OperandOne;
-
-            var opTwo = (int)(object)mathematicOperation.OperandTwo;
-
-            return (T)Convert.ChangeType(opOne + opTwo,
-                                         typeof(T));
         }
 
         #endregion

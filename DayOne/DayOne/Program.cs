@@ -1,17 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
+using DayOne.Impl;
 using DayOne.Impl.Processors;
-using DayOne.Models;
+using DayOne.Interfaces;
 
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DayOne
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        #region Class Methods
+
+        private static void Main()
         {
             var inputs = new List<int>
                          {
@@ -217,23 +219,48 @@ namespace DayOne
                              1209
                          };
 
+            var requiredSum = 2020;
+
             var serviceCollection = new ServiceCollection();
 
-            var serviceProvider = serviceCollection//.AddSingleton<IFooService, FooService>()
-                                                   //.AddSingleton<IBarService, BarService>()
+            var serviceProvider = serviceCollection.AddSingleton<IMathematicOperationEvaluator, MathematicOperationEvaluator>()
+                                                   .AddSingleton<IOperationFactory, OperationFactory>()
+                                                   .AddSingleton<IOperationProcessorSelector, OperationProcessorSelector>()
+                                                   .AddSingleton<IValueSumFinder, ValueSumFinder>()
                                                    .BuildServiceProvider();
 
-            var op = new MathematicOperation<int>(5,
-                                                  2,
-                                                  Enums.MathematicOperationType.Add);
+            var sumFinder = serviceProvider.GetService<IValueSumFinder>();
 
-            var proc = new IntAdditionProcessor();
+            // Part one
+            var matchingValues = sumFinder.GetValuesForSumAsync(inputs,
+                                                                2,
+                                                                requiredSum)
+                                          .Result;
 
-            var output = proc.ProcessOperation(op);
+            var opFactory = serviceProvider.GetService<IOperationFactory>();
 
-            Console.WriteLine(output);
+            var multOperation = opFactory.CreateMultiplicationOperation(matchingValues);
 
+            var operationEvaluator = serviceProvider.GetService<IMathematicOperationEvaluator>();
+
+            var result = operationEvaluator.EvaluateOperation(multOperation);
+
+            Console.WriteLine($"Part One Result is {result}.");
+
+            // Part two
+            matchingValues = sumFinder.GetValuesForSumAsync(inputs,
+                                                            3,
+                                                            requiredSum)
+                                      .Result;
+
+            multOperation = opFactory.CreateMultiplicationOperation(matchingValues);
+
+            result = operationEvaluator.EvaluateOperation(multOperation);
+
+            Console.WriteLine($"Part Two Result is {result}.");
             Console.ReadKey();
         }
+
+        #endregion
     }
 }

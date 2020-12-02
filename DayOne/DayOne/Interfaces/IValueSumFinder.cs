@@ -1,17 +1,30 @@
-﻿namespace DayOne.Interfaces
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace DayOne.Interfaces
 {
     public interface IValueSumFinder
     {
         #region Instance Methods
 
         /// <summary>
-        /// Gets the sum for two values <paramref name="valueOne" /> and <paramref name="valueTwo" />.
+        /// Finds the two values from <paramref name="values" /> that add to <paramref name="requiredSum" />.
         /// </summary>
-        /// <param name="valueOne">The first value.</param>
-        /// <param name="valueTwo">The second value.</param>
-        /// <returns>The sum of these values.</returns>
-        int GetSum(int valueOne,
-                   int valueTwo);
+        /// <param name="values">
+        /// The list of potential values to use.
+        /// </param>
+        /// <param name="numberOfValues">
+        /// The number of values to sum to reach <paramref name="requiredSum" />.
+        /// </param>
+        /// <param name="requiredSum">
+        /// The sum the return values should sum to.
+        /// </param>
+        /// <returns>
+        /// The two values that add to <paramref name="requiredSum" /> from <paramref name="values" />.
+        /// </returns>
+        Task<List<int>> GetValuesForSumAsync(List<int> values,
+                                             int numberOfValues,
+                                             int requiredSum);
 
         #endregion
     }
