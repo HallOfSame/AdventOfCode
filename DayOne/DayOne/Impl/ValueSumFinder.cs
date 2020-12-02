@@ -77,6 +77,7 @@ namespace DayOne.Impl
 
                         innerValuesTwoElectricBoogaloo.RemoveAt(k);
 
+                        // Removing this uses 6+ GB of memory. Not recommended.
                         if (valueOne + valueTwo >= requiredSum)
                         {
                             continue;
