@@ -59,6 +59,8 @@ namespace DayOne.Impl
 
             if (numberOfValues == 3)
             {
+                var listOfTasks = new List<Task<List<int>>>();
+
                 for (var i = 0; i < values.Count; i++)
                 {
                     var innerValues = values.ToList();
@@ -75,26 +77,32 @@ namespace DayOne.Impl
 
                         innerValuesTwoElectricBoogaloo.RemoveAt(k);
 
+                        if (valueOne + valueTwo >= requiredSum)
+                        {
+                            continue;
+                        }
+
                         var setValues = new List<int>
                                         {
                                             valueOne,
                                             valueTwo
                                         };
 
-                        summationTasks = innerValuesTwoElectricBoogaloo.Select((val,
-                                                                                index) =>
-                                                                               {
-                                                                                   var remainingValues = values.ToList();
+                        listOfTasks.AddRange(innerValuesTwoElectricBoogaloo.Select((val,
+                                                                                    index) =>
+                                                                                   {
+                                                                                       var remainingValues = values.ToList();
 
-                                                                                   remainingValues.RemoveAt(index);
+                                                                                       remainingValues.RemoveAt(index);
 
-                                                                                   return Task.Run(() => GetMatchingValue(setValues,
-                                                                                                                          remainingValues,
-                                                                                                                          requiredSum));
-                                                                               })
-                                                                       .ToArray();
+                                                                                       return Task.Run(() => GetMatchingValue(setValues,
+                                                                                                                              remainingValues,
+                                                                                                                              requiredSum));
+                                                                                   }));
                     }
                 }
+
+                summationTasks = listOfTasks.ToArray();
             }
 
             await Task.WhenAll(summationTasks);
