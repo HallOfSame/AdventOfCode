@@ -1019,7 +1019,11 @@ namespace DayTwo
         private static void Main(string[] args)
         {
             // Part one
-            Console.WriteLine($"Valid password count: {input.Select(x => new PasswordInput(x)).Count(x => x.IsValid)}.");
+            Console.WriteLine($"Valid password count pt1: {input.Select(x => new PasswordInput(x)).Count(x => x.IsValid)}.");
+
+            // Part two
+            Console.WriteLine($"Valid password count pt2: {input.Select(x => new PasswordInputV2(x)).Count(x => x.IsValid)}.");
+
             Console.ReadKey();
         }
 
@@ -1033,7 +1037,6 @@ namespace DayTwo
 
             public PasswordInput(string inputText)
             {
-                //"18-19 k: kkkkkkkkkkkkkkkkkkm",
                 var dashIndex = inputText.IndexOf('-');
 
                 var min = inputText.Substring(0,
@@ -1050,7 +1053,8 @@ namespace DayTwo
                 // Clean the max plus the space
                 inputText = inputText.Substring(spaceIndex + 1);
 
-                var chr = inputText.Substring(0, 1);
+                var chr = inputText.Substring(0,
+                                              1);
 
                 var password = inputText.Substring(inputText.IndexOf(":") + 1);
 
@@ -1085,6 +1089,80 @@ namespace DayTwo
             private string Password { get; }
 
             private char RestrictedChar { get; }
+
+            #endregion
+        }
+
+        #endregion
+
+        #region Nested type: PasswordInputV2
+
+        private class PasswordInputV2
+        {
+            #region Constructors
+
+            public PasswordInputV2(string inputText)
+            {
+                var dashIndex = inputText.IndexOf('-');
+
+                var posOne = inputText.Substring(0,
+                                                 dashIndex);
+
+                // Clean min plus the -
+                inputText = inputText.Substring(dashIndex + 1);
+
+                var spaceIndex = inputText.IndexOf(' ');
+
+                var posTwo = inputText.Substring(0,
+                                                 spaceIndex);
+
+                // Clean the max plus the space
+                inputText = inputText.Substring(spaceIndex + 1);
+
+                var chr = inputText.Substring(0,
+                                              1);
+
+                var password = inputText.Substring(inputText.IndexOf(":") + 1)
+                                        .Trim();
+
+                // They don't use 0 based index so we need to sub one here
+                PosOne = int.Parse(posOne) - 1;
+                PosTwo = int.Parse(posTwo) - 1;
+
+                RequiredChar = chr[0];
+
+                Password = password;
+            }
+
+            #endregion
+
+            #region Instance Properties
+
+            public bool IsValid
+            {
+                get
+                {
+                    var firstPosHasChar = Password.Substring(PosOne,
+                                                             1)[0]
+                                          == RequiredChar;
+
+                    var secondPosHasChar = Password.Substring(PosTwo,
+                                                              1)[0]
+                                           == RequiredChar;
+
+                    // Recorded: The only time I've ever used XOR in a c# program
+                    // Side note: I'm very proud I didn't have to look it up
+                    return firstPosHasChar ^ secondPosHasChar;
+                }
+            }
+
+            private string Password { get; }
+
+            private int PosOne { get; }
+
+            private int PosTwo { get; }
+
+            private char RequiredChar { get; }
 
             #endregion
         }
