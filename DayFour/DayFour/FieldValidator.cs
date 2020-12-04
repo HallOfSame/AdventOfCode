@@ -1,19 +1,39 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace DayFour
 {
     public class FieldValidator
     {
-        private readonly Func<bool, string> fieldValidationMethod;
+        #region Fields
 
-        private readonly string key;
+        private readonly Func<string, bool> fieldValidationMethod;
 
-        public FieldValidator(string key, Func<bool, string> fieldValidation)
+        #endregion
+
+        #region Constructors
+
+        public FieldValidator(string key,
+                              Func<string, bool> fieldValidation)
         {
-            this.key = key;
-            this.fieldValidationMethod = fieldValidation;
+            Key = key;
+            fieldValidationMethod = fieldValidation;
         }
+
+        #endregion
+
+        #region Instance Properties
+
+        public string Key { get; }
+
+        #endregion
+
+        #region Instance Methods
+
+        public bool TestInput(string value)
+        {
+            return fieldValidationMethod(value);
+        }
+
+        #endregion
     }
 }
