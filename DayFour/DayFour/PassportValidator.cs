@@ -6,15 +6,15 @@ namespace DayFour
     {
         #region Fields
 
-        private readonly HashSet<string> requiredKeys;
+        private readonly List<FieldValidator> validators;
 
         #endregion
 
         #region Constructors
 
-        public PassportValidator(List<string> requiredKeys)
+        public PassportValidator(List<FieldValidator> validators)
         {
-            this.requiredKeys = new HashSet<string>(requiredKeys);
+            this.validators = validators;
         }
 
         #endregion
@@ -23,12 +23,21 @@ namespace DayFour
 
         public bool IsPassportValid(PassportModel passportModel)
         {
-            var passportKeys = new HashSet<string>(passportModel.KeyValues.Keys);
+            foreach (var validator in validators)
+            {
+                if (!passportModel.KeyValues.TryGetValue(validator.Key,
+                                                         out var value))
+                {
+                    return false;
+                }
 
-            // If the keys of the passport is a super set, then it has all the required keys
-            var valid = passportKeys.IsSupersetOf(requiredKeys);
+                if (!validator.TestInput(value))
+                {
+                    return false;
+                }
+            }
 
-            return valid;
+            return true;
         }
 
         #endregion
