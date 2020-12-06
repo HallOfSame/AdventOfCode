@@ -21,9 +21,15 @@ namespace Day06
             }
 
             // Part One
-            var numberOfQuestionsAnsweredYesTotal = groupModels.Sum(x => x.NumberOfQuestionsAnsweredYes);
+            var numberOfQuestionsAnsweredYesTotal = groupModels.Sum(x => x.NumberOfQuestionsAnsweredYesByAny);
 
             Console.WriteLine($"Number of questions answered yes summed: {numberOfQuestionsAnsweredYesTotal}.");
+
+            // Part Two
+
+            var numberOfQuestionsAnsweredYesIntersect = groupModels.Sum(x => x.NumberOfQuestionsAnsweredYesByAll);
+
+            Console.WriteLine($"Number of questions answered yes by all group members {numberOfQuestionsAnsweredYesIntersect}.");
         }
 
         #endregion

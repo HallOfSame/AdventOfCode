@@ -5,27 +5,68 @@ namespace Day06
 {
     public class GroupModel
     {
+        #region Fields
+
+        private readonly List<IEnumerable<char>> linesOfGroup;
+
+        #endregion
+
         #region Constructors
 
-        public GroupModel(IEnumerable<char> questionsAnsweredYes)
+        public GroupModel(IEnumerable<IEnumerable<char>> groupLines)
         {
-            QuestionsAnsweredYes = new string(questionsAnsweredYes.OrderBy(x => x)
-                                                                  .ToArray());
+            linesOfGroup = groupLines.ToList();
         }
 
         #endregion
 
         #region Instance Properties
 
-        public int NumberOfQuestionsAnsweredYes
+        public int NumberOfQuestionsAnsweredYesByAll
         {
             get
             {
-                return QuestionsAnsweredYes.Length;
+                return QuestionsAnsweredYesByAll.Length;
             }
         }
 
-        public string QuestionsAnsweredYes { get; }
+        public int NumberOfQuestionsAnsweredYesByAny
+        {
+            get
+            {
+                return QuestionsAnsweredYesByAny.Length;
+            }
+        }
+
+        public string QuestionsAnsweredYesByAll
+        {
+            get
+            {
+                var firstResponse = linesOfGroup.First();
+
+                var hash = new HashSet<char>(firstResponse);
+
+                linesOfGroup.Skip(1)
+                            .ToList()
+                            .ForEach(x => hash.IntersectWith(x));
+
+                return new string(hash.OrderBy(x => x)
+                                      .ToArray());
+            }
+        }
+
+        public string QuestionsAnsweredYesByAny
+        {
+            get
+            {
+                var hash = new HashSet<char>();
+
+                linesOfGroup.ForEach(x => hash.UnionWith(x));
+
+                return new string(hash.OrderBy(x => x)
+                                      .ToArray());
+            }
+        }
 
         #endregion
     }

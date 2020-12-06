@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,13 +14,13 @@ namespace Day06
         {
             var models = new List<GroupModel>();
 
-            var questionsAnsweredYes = new HashSet<char>(26);
+            var linesOfGroup = new List<IEnumerable<char>>();
 
             void AddModelToList()
             {
-                var model = new GroupModel(questionsAnsweredYes);
+                var model = new GroupModel(linesOfGroup);
                 models.Add(model);
-                questionsAnsweredYes.Clear();
+                linesOfGroup.Clear();
             }
 
             while (!streamReader.EndOfStream)
@@ -32,10 +33,8 @@ namespace Day06
                     continue;
                 }
 
-                var questionsInLine = nextLine.ToCharArray()
-                                              .ToHashSet();
-
-                questionsAnsweredYes.UnionWith(questionsInLine);
+                var questionsInLine = nextLine.ToCharArray();
+                linesOfGroup.Add(questionsInLine);
             }
 
             // Add the final model. Our file reading seems to ignore the final blank line in the file
