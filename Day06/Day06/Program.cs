@@ -30,6 +30,10 @@ namespace Day06
             var numberOfQuestionsAnsweredYesIntersect = groupModels.Sum(x => x.NumberOfQuestionsAnsweredYesByAll);
 
             Console.WriteLine($"Number of questions answered yes by all group members {numberOfQuestionsAnsweredYesIntersect}.");
+
+            var altAnswers = await Day6Beautiful.GetAnswers();
+
+            Console.WriteLine($"Alt PT1 {altAnswers.partOne}. Alt PT2 {altAnswers.partTwo}.");
         }
 
         #endregion
