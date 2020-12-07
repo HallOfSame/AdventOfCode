@@ -7,7 +7,7 @@ namespace Day07
         #region Constructors
 
         public BagRuleModel(string color,
-                            List<string> allowedContents)
+                            List<(string, int)> allowedContents)
         {
             BagColor = color;
             AllowedContents = allowedContents;
@@ -17,9 +17,7 @@ namespace Day07
 
         #region Instance Properties
 
-        public List<string> AllowedContents { get; }
-
-        public List<string> AllowedIn { get; set; }
+        public List<(string color, int qty)> AllowedContents { get; }
 
         public string BagColor { get; }
 

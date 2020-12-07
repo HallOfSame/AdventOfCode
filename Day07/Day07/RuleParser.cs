@@ -61,18 +61,24 @@ namespace Day07
                                       .TrimEnd('.')
                                       .Split(',');
 
-            var allowedContentColors = new List<string>();
+            var allowedContentColors = new List<(string, int)>();
 
             foreach (var contentSplit in allowedContentSplit)
             {
-                var content = contentSplit.Split(' ',
+                if (contentSplit == "no other bags")
+                {
+                    continue;
+                }
+
+                var content = contentSplit.Trim()
+                                          .Split(' ',
                                                  2);
 
-                var quantity = content[0];
+                var quantity = int.Parse(content[0]);
 
                 var color = SanitizeColor(content[1]);
 
-                allowedContentColors.Add(color);
+                allowedContentColors.Add((color, quantity));
             }
 
             return new BagRuleModel(ruleColor,
