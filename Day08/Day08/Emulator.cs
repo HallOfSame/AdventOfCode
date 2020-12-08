@@ -41,12 +41,15 @@ namespace Day08
 
         #region Instance Methods
 
-        public ResultCode RunOperations(List<Operation> operations)
+        public ResultCode RunOperations(List<Operation> operations,
+                                        out Stack<Operation> operationHistory)
         {
             AccumulatorValue = 0;
             lineNumbersExecuted.Clear();
 
             var lineNumberToExecute = 0;
+
+            operationHistory = new Stack<Operation>(operations.Count);
 
             ResultCode result;
 
@@ -59,7 +62,7 @@ namespace Day08
                     break;
                 }
 
-                if (lineNumberToExecute == operations.Count + 1)
+                if (lineNumberToExecute == operations.Count)
                 {
                     // We've reached the end of the file
                     result = ResultCode.ExecutionComplete;
@@ -76,6 +79,8 @@ namespace Day08
                 lineNumbersExecuted.Add(lineNumberToExecute);
 
                 var operationToExecute = operations[lineNumberToExecute];
+
+                operationHistory.Push(operationToExecute);
 
                 switch (operationToExecute.OperationType)
                 {

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Day08
@@ -24,13 +23,18 @@ namespace Day08
             var emulator = new Emulator();
 
             // Pt 1
-            var result = emulator.RunOperations(operations);
+            var result = emulator.RunOperations(operations,
+                                                out _);
 
             Console.WriteLine($"Result of running operations {result}. Accumulator at {emulator.AccumulatorValue}.");
 
             // Pt 2
 
+            var fixer = new OperationFixer(operations);
 
+            var fixedAccValue = fixer.GetAccumulatorForFixedProgram();
+
+            Console.WriteLine($"Result of accumulator with fixed instructions: {fixedAccValue}.");
         }
 
         #endregion
