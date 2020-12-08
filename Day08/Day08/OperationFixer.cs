@@ -33,6 +33,7 @@ namespace Day08
                 return emulator.AccumulatorValue;
             }
 
+
             do
             {
                 Operation poppedInstruction;

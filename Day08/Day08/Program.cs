@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -30,11 +31,23 @@ namespace Day08
 
             // Pt 2
 
+            var sw = new Stopwatch();
+            sw.Start();
             var fixer = new OperationFixer(operations);
 
             var fixedAccValue = fixer.GetAccumulatorForFixedProgram();
+            sw.Stop();
+            Console.WriteLine($"Result of accumulator with fixed instructions: {fixedAccValue}. In {sw.ElapsedMilliseconds} ms.");
 
-            Console.WriteLine($"Result of accumulator with fixed instructions: {fixedAccValue}.");
+            // Pt 2 inspired by reddit
+
+            sw.Restart();
+            var analyzer = new OperationAnalyzer(operations);
+            var fixedOps = analyzer.AnalyzeAndFixInstructions();
+            emulator.RunOperations(fixedOps,
+                                   out _);
+            sw.Stop();
+            Console.WriteLine($"Accumulator of analyzed {emulator.AccumulatorValue}. In {sw.ElapsedMilliseconds} ms.");
         }
 
         #endregion
