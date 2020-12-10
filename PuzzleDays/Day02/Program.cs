@@ -17,10 +17,9 @@ namespace Day02
             operations[1] = 12;
             operations[2] = 2;
 
-            var outputList = new IntCodeInterpreter.IntCodeInterpreter().ProcessOperations(operations);
+            new IntCodeInterpreter.IntCodeInterpreter().ProcessOperations(operations);
 
-            Console.WriteLine($"Value at 0 after running program: {outputList[0]}.");
-            Console.WriteLine($"Output: {string.Join(", ", outputList)}.");
+            Console.WriteLine($"Value at 0 after running program: {operations[0]}.");
         }
 
         #endregion

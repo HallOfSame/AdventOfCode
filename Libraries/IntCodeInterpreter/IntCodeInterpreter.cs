@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using IntCodeInterpreter.Extensions;
 using IntCodeInterpreter.Models;
+using IntCodeInterpreter.Models.Instructions;
+using IntCodeInterpreter.Models.Instructions.Arithmetic;
 
 namespace IntCodeInterpreter
 {
@@ -10,14 +13,13 @@ namespace IntCodeInterpreter
     {
         #region Instance Methods
 
-        public List<int> ProcessOperations(List<int> operations)
+        public void ProcessOperations(List<int> memory)
         {
-            var operationIndex = 0;
+            var instructionPointer = 0;
 
             while (true)
             {
-                var currentOp = operations[operationIndex];
-                operationIndex += 4;
+                var currentOp = memory[instructionPointer];
 
                 if (!Enum.TryParse<OpCode>(currentOp.ToString(),
                                            out var opCode))
@@ -27,40 +29,62 @@ namespace IntCodeInterpreter
 
                 if (opCode == OpCode.EndExecution)
                 {
-                    return operations;
+                    return;
                 }
 
-                if (opCode.IsArithmetic())
-                {
-                    ProcessArithmeticOperation(opCode,
-                                               operations[operationIndex - 3],
-                                               operations[operationIndex - 2],
-                                               operations[operationIndex - 1],
-                                               operations);
-                    continue;
-                }
+                Instruction instruction;
 
                 switch (opCode)
                 {
+                    case { } arithmeticCode when opCode.IsArithmetic():
+                        instruction = BuildArithmeticInstruction(memory.Skip(instructionPointer)
+                                                                       .Take(4)
+                                                                       .ToArray(),
+                                                                 arithmeticCode);
+
+                        ProcessArithmeticOperation((ArithmeticInstruction)instruction,
+                                                   memory);
+                        break;
                     case OpCode.Unknown:
                         throw new InvalidOperationException("Unknown op code encountered.");
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
+
+                instructionPointer += instruction.InstructionPointerIncrement;
             }
         }
 
-        private void ProcessArithmeticOperation(OpCode currentOp,
-                                                int posOne,
-                                                int posTwo,
-                                                int outputPos,
-                                                List<int> operations)
+        private ArithmeticInstruction BuildArithmeticInstruction(int[] instruction,
+                                                                 OpCode opCode)
         {
-            var valOne = operations[posOne];
-            var valTwo = operations[posTwo];
+            var opOne = new Parameter(instruction[1]);
+            var opTwo = new Parameter(instruction[2]);
+            var dest = new Parameter(instruction[3]);
+
+            switch (opCode)
+            {
+                case OpCode.Add:
+                    return new AddInstruction(opOne,
+                                              opTwo,
+                                              dest);
+                case OpCode.Multiply:
+                    return new MultiplyInstruction(opOne,
+                                                   opTwo,
+                                                   dest);
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(opCode));
+        }
+
+        private void ProcessArithmeticOperation(ArithmeticInstruction instruction,
+                                                List<int> memory)
+        {
+            var valOne = memory[instruction.OperandOne.Value];
+            var valTwo = memory[instruction.OperandTwo.Value];
             int result;
 
-            switch (currentOp)
+            switch (instruction.OpCode)
             {
                 case OpCode.Add:
                     result = valOne + valTwo;
@@ -69,10 +93,10 @@ namespace IntCodeInterpreter
                     result = valOne * valTwo;
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(currentOp));
+                    throw new ArgumentOutOfRangeException(nameof(instruction.OpCode));
             }
 
-            operations[outputPos] = result;
+            memory[instruction.Destination.Value] = result;
         }
 
         #endregion
