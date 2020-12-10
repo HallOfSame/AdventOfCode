@@ -49,31 +49,31 @@ namespace Day10
 
             // PT 2
 
-            var deviceJolt = input.Last() + 3;
+            var forcedConnections = input.Where((x,
+                                                 idx) =>
+                                                {
+                                                    if (idx - 1 < 0)
+                                                    {
+                                                        // First item in the list only cares about if we have to have it to connect to the second
+                                                        return input[idx + 1] - x == 3;
+                                                    }
+                                                    else if (idx + 1 >= input.Count)
+                                                    {
+                                                        // Final one always needs to connect
+                                                        return true;
+                                                    }
 
-            // We know there's a way to hook them all together in a line from PT 1
-            // Can we find a minimal hook up then get the total based on the number of optional ones?
+                                                    // If the next item is 3 away from the second we always have to hook up the first adapter
+                                                    var requiredToConnectToNext = input[idx + 1] - x == 3;
 
-            currentJolt = 0;
+                                                    // Similarly if the prev item is 3 away we must always connect our current adapter
+                                                    var requiredToConnectToPrev = input[idx - 1] - x == -3;
 
-            var minimalJolts = new List<int>();
+                                                    return requiredToConnectToNext || requiredToConnectToPrev;
+                                                })
+                                         .ToList();
 
-            for (var i = 0; i < input.Count; i++)
-            {
-                var possibleHookups = input.Skip(i)
-                                           .Take(3)
-                                           .ToList();
-
-                var largestValidHook = possibleHookups.Last(x => x - currentJolt <= 3);
-
-                i += possibleHookups.IndexOf(largestValidHook);
-
-                currentJolt = largestValidHook;
-
-                minimalJolts.Add(largestValidHook);
-            }
-
-            var optionalAdapters = input.Where(x => !minimalJolts.Contains(x))
+            var optionalAdapters = input.Where(x => !forcedConnections.Contains(x))
                                         .ToList();
 
             // Math time
@@ -82,7 +82,7 @@ namespace Day10
             // Formula: C = (X!) / (N! * (X-N)!)
             var combinations = 0;
 
-            int GetFactorial(int num)
+            decimal GetFactorial(int num)
             {
                 if (num == 0)
                 {
@@ -91,14 +91,14 @@ namespace Day10
 
                 return Enumerable.Range(1,
                                         num)
-                                 .Aggregate(1,
+                                 .Aggregate(1m,
                                             (fac,
                                              val) => fac * val);
             }
 
             var xFactorial = GetFactorial(optionalAdapters.Count);
 
-            for (var i = 0; i < optionalAdapters.Count; i++)
+            for (var i = 0; i <= optionalAdapters.Count; i++)
             {
                 var nFactorial = GetFactorial(i);
 
@@ -106,12 +106,11 @@ namespace Day10
 
                 var combinationsAtI = (xFactorial) / (nFactorial * xMinusNFactorial);
 
-                combinations += combinationsAtI;
+                Console.WriteLine($"Combinations at {i}: {combinationsAtI}");
+
+                combinations += (int)combinationsAtI;
             }
-
-            // Add one for the minimal combo we already calculated
-            combinations++;
-
+            
             Console.WriteLine($"Combinations of hookups for our device {combinations}.");
         }
     }
