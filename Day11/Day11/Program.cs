@@ -142,9 +142,9 @@ namespace Day11
                 return neighbors;
             }
 
-            // TODO calculate
             // 8 directions to check
             // Keep moving in one until we get null or a non floor space
+            // There's probably a way to make this nicer but technically it'd never need to expand for 2d space
 
             // UP
             var row = currentRow;
