@@ -6,6 +6,8 @@ using IntCodeInterpreter.Extensions;
 using IntCodeInterpreter.Models;
 using IntCodeInterpreter.Models.Instructions;
 using IntCodeInterpreter.Models.Instructions.Arithmetic;
+using IntCodeInterpreter.Models.Instructions.Comparison;
+using IntCodeInterpreter.Models.Instructions.FlowControl.Jump;
 using IntCodeInterpreter.Models.Instructions.IO;
 
 namespace IntCodeInterpreter
@@ -43,32 +45,54 @@ namespace IntCodeInterpreter
 
                 if (opCode == OpCode.EndExecution)
                 {
+                    mem = memory.ToList();
+
                     return;
                 }
 
                 Instruction instruction;
 
+                int[] GetArrayForInstruction(int size)
+                {
+                    return memory.Skip(instructionPointer)
+                                 .Take(size)
+                                 .ToArray();
+                }
+
                 switch (opCode)
                 {
                     case { } arithmeticCode when opCode.IsArithmetic():
-                        instruction = BuildArithmeticInstruction(memory.Skip(instructionPointer)
-                                                                       .Take(4)
-                                                                       .ToArray(),
+                        instruction = BuildArithmeticInstruction(GetArrayForInstruction(4),
                                                                  arithmeticCode);
 
                         ProcessArithmeticOperation((ArithmeticInstruction)instruction,
                                                    memory);
                         break;
+                    case { } jumpCode when opCode.IsJump():
+                        instruction = BuildJumpInstruction(GetArrayForInstruction(3),
+                                                           jumpCode);
+
+                        var jumpInstruction = (JumpInstruction)instruction;
+
+                        ProcessJumpOperation(jumpInstruction,
+                                             ref instructionPointer,
+                                             memory);
+                        break;
+                    case {} compareCode when opCode.IsComparison():
+                        instruction = BuildCompareInstruction(GetArrayForInstruction(4),
+                                                              compareCode);
+
+                        var compareInstruction = (ComparisonInstruction)instruction;
+
+                        ProcessCompareOperation(compareInstruction,
+                                                memory);
+                        break;
                     case OpCode.Input:
-                        instruction = BuildInputInstruction(memory.Skip(instructionPointer)
-                                                                  .Take(2)
-                                                                  .ToArray());
+                        instruction = BuildInputInstruction(GetArrayForInstruction(2));
                         memory[((InputInstruction)instruction).Destination.Value] = input;
                         break;
                     case OpCode.Output:
-                        instruction = BuildOutputInstruction(memory.Skip(instructionPointer)
-                                                                   .Take(2)
-                                                                   .ToArray());
+                        instruction = BuildOutputInstruction(GetArrayForInstruction(2));
 
                         onOutput(GetParameterValue(((OutputInstruction)instruction).Source,
                                                    memory));
@@ -111,11 +135,63 @@ namespace IntCodeInterpreter
             throw new ArgumentOutOfRangeException(nameof(opCode));
         }
 
+        private ComparisonInstruction BuildCompareInstruction(int[] instruction,
+                                                              OpCode opCode)
+        {
+            var opOne = new Parameter(instruction[1],
+                                      GetMode(instruction[0],
+                                              1));
+            var opTwo = new Parameter(instruction[2],
+                                      GetMode(instruction[0],
+                                              2));
+
+            var destination = new Parameter(instruction[3],
+                                            GetMode(instruction[0],
+                                                    3));
+
+            switch (opCode)
+            {
+                case OpCode.LessThan:
+                    return new LessThanInstruction(opOne,
+                                                   opTwo,
+                                                   destination);
+                case OpCode.Equals:
+                    return new EqualsInstruction(opOne,
+                                                 opTwo,
+                                                 destination);
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(opCode));
+        }
+
         private InputInstruction BuildInputInstruction(int[] instruction)
         {
             return new InputInstruction(new Parameter(instruction[1],
                                                       GetMode(instruction[0],
                                                               1)));
+        }
+
+        private JumpInstruction BuildJumpInstruction(int[] instruction,
+                                                     OpCode opCode)
+        {
+            var opOne = new Parameter(instruction[1],
+                                      GetMode(instruction[0],
+                                              1));
+            var opTwo = new Parameter(instruction[2],
+                                      GetMode(instruction[0],
+                                              2));
+
+            switch (opCode)
+            {
+                case OpCode.JumpIfFalse:
+                    return new JumpIfFalseInstruction(opOne,
+                                                      opTwo);
+                case OpCode.JumpIfTrue:
+                    return new JumpIfTrueInstruction(opOne,
+                                                     opTwo);
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(opCode));
         }
 
         private OutputInstruction BuildOutputInstruction(int[] instruction)
@@ -172,6 +248,68 @@ namespace IntCodeInterpreter
             }
 
             memory[instruction.Destination.Value] = result;
+        }
+
+        private void ProcessCompareOperation(ComparisonInstruction instruction,
+                                             int[] memory)
+        {
+            var valueOne = GetParameterValue(instruction.ValueOne,
+                                             memory);
+
+            var valueTwo = GetParameterValue(instruction.ValueTwo,
+                                             memory);
+
+            int valueToSet;
+
+            switch (instruction.OpCode)
+            {
+                case OpCode.LessThan:
+                    valueToSet = valueOne < valueTwo
+                                     ? 1
+                                     : 0;
+                    break;
+                case OpCode.Equals:
+                    valueToSet = valueOne == valueTwo
+                                     ? 1
+                                     : 0;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(instruction.OpCode));
+            }
+
+            memory[instruction.Destination.Value] = valueToSet;
+        }
+
+        private void ProcessJumpOperation(JumpInstruction instruction,
+                                          ref int instructionPointer,
+                                          int[] memory)
+        {
+            var value = GetParameterValue(instruction.Value,
+                                          memory);
+
+            bool setInstructionPointer;
+
+            switch (instruction.OpCode)
+            {
+                case OpCode.JumpIfTrue:
+                    setInstructionPointer = value != 0;
+                    break;
+                case OpCode.JumpIfFalse:
+                    setInstructionPointer = value == 0;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(instruction.OpCode));
+            }
+
+            if (setInstructionPointer)
+            {
+                instructionPointer = GetParameterValue(instruction.InstructionPointer,
+                                                       memory);
+            }
+            else
+            {
+                instructionPointer += 3;
+            }
         }
 
         #endregion

@@ -12,6 +12,14 @@
 
         Output = 4,
 
+        JumpIfTrue = 5,
+
+        JumpIfFalse = 6,
+
+        LessThan = 7,
+
+        Equals = 8,
+
         EndExecution = 99
     }
 }

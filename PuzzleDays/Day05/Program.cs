@@ -14,6 +14,7 @@ namespace Day05
 
             var interpreter = new Interpreter();
 
+            // Part 1
             interpreter.ProcessOperations(ops,
                                           1,
                                           (x) =>
@@ -24,6 +25,15 @@ namespace Day05
                                                   // So just write everything not 0. If there's more than 1 the interpreter is wrong
                                                   Console.WriteLine($"Output: {x}");
                                               }
+                                          });
+
+            // Part 2
+            interpreter.ProcessOperations(ops,
+                                          5,
+                                          (x) =>
+                                          {
+                                              // Should only get one
+                                              Console.WriteLine($"Output: {x}");
                                           });
         }
     }
