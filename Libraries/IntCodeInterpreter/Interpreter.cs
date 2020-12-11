@@ -9,7 +9,7 @@ using IntCodeInterpreter.Models.Instructions.Arithmetic;
 
 namespace IntCodeInterpreter
 {
-    public class IntCodeInterpreter
+    public class Interpreter
     {
         #region Instance Methods
 
