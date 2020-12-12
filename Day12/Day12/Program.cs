@@ -44,6 +44,21 @@ namespace Day12
             var distance = Math.Abs(location.x) + Math.Abs(location.y);
 
             Console.WriteLine($"Distance from start: {distance}.");
+
+            //PT 2
+
+            var ship2 = new Part2Ship();
+
+            foreach (var move in moves)
+            {
+                ship2.MoveShip(move);
+            }
+
+            var location2 = ship2.GetCurrentPosition();
+
+            var distance2 = Math.Abs(location2.x) + Math.Abs(location2.y);
+
+            Console.WriteLine($"Distance from start PT 2: {distance2}.");
         }
 
         #endregion
