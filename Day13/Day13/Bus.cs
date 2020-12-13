@@ -4,8 +4,8 @@
     {
         #region Constructors
 
-        public Bus(int nextDeparture,
-                   int id)
+        public Bus(long nextDeparture,
+                   long id)
         {
             NextDeparture = nextDeparture;
             Id = id;
@@ -15,9 +15,9 @@
 
         #region Instance Properties
 
-        public int Id { get; }
+        public long Id { get; }
 
-        public int NextDeparture { get; }
+        public long NextDeparture { get; }
 
         #endregion
     }
