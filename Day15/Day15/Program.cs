@@ -10,7 +10,7 @@ namespace Day15
 
         private static void Main(string[] args)
         {
-            var input = "2,0,6,12,1,3";
+            var input = "";
 
             var listOfNumbers = new Queue<int>(input.Split(',')
                                                     .Select(int.Parse)
@@ -22,7 +22,7 @@ namespace Day15
 
             var memory = new Dictionary<int, LimitedQueue<int>>();
 
-            var neededNumber = 2020;
+            var neededNumber = 30000000;
 
             while (turn <= neededNumber)
             {
