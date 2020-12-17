@@ -53,6 +53,44 @@ namespace Day17
 
             // Should be 310
             Console.WriteLine($"Number of active cubes after {simTurns} turns. {dimension.ActiveCubeCount}.");
+
+            // PT 2
+            initActive = new HashSet<Coordinate>();
+
+            // Have the top left of the input = all 0 coordinates
+            currentX = 0;
+
+            foreach (var line in fileLines)
+            {
+                var lineArray = line.ToCharArray();
+
+                for (var y = 0; y < lineArray.Length; y++)
+                {
+                    if (lineArray[y] == '#')
+                    {
+                        initActive.Add(new Coordinate4d(currentX,
+                                                        y,
+                                                        0,
+                                                        0));
+                    }
+                }
+
+                currentX++;
+            }
+
+            dimension = new Dimension(initActive);
+
+            for (var i = 0; i < simTurns; i++)
+            {
+                stopWatch.Restart();
+                Simulator.RunOneTurn(dimension);
+                stopWatch.Stop();
+                Console.WriteLine($"Turn {i + 1}. Time {stopWatch.ElapsedMilliseconds}ms. Cubes {dimension.ActiveCubeCount}.");
+            }
+
+            // PT 2
+            // Should be 2056
+            Console.WriteLine($"PT 2 Number of active cubes after {simTurns} turns. {dimension.ActiveCubeCount}.");
         }
 
         #endregion
