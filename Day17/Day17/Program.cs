@@ -11,36 +11,8 @@ namespace Day17
     {
         #region Class Methods
 
-        private static void DrawZLevel(List<List<Cube>> zLevel)
-        {
-            var builder = new StringBuilder();
-
-            builder.Append(Environment.NewLine);
-
-            foreach (var row in zLevel)
-            {
-                foreach (var cube in row)
-                {
-                    builder.Append(cube.State
-                                       ? '#'
-                                       : '.');
-                }
-
-                builder.Append(Environment.NewLine);
-            }
-
-            Console.WriteLine(builder.ToString());
-        }
-
         private static void Main(string[] args)
         {
-            //var fileText = File.ReadAllText("PuzzleInput.txt");
-
-            //for (var i = 1; i <= 7; i++)
-            //{
-            //    Console.WriteLine($"{i} - {Other.Puzzle1(fileText, i)}");
-            //}
-
             var simTurns = 6;
 
             // Add padding around the edges
