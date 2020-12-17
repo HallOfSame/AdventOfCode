@@ -8,7 +8,7 @@ namespace Day17
     {
         #region Instance Properties
 
-        public abstract List<Coordinate> GetNeighbors { get; }
+        public abstract HashSet<Coordinate> GetNeighbors { get; }
 
         #endregion
     }
@@ -31,11 +31,11 @@ namespace Day17
 
         #region Instance Properties
 
-        public override List<Coordinate> GetNeighbors
+        public override HashSet<Coordinate> GetNeighbors
         {
             get
             {
-                var neighborCoordinates = new List<Coordinate>(26);
+                var neighborCoordinates = new HashSet<Coordinate>(26);
 
                 for (var x = -1; x <= 1; x++)
                 {
@@ -138,11 +138,11 @@ namespace Day17
 
         #region Instance Properties
 
-        public override List<Coordinate> GetNeighbors
+        public override HashSet<Coordinate> GetNeighbors
         {
             get
             {
-                var neighborCoordinates = new List<Coordinate>(26);
+                var neighborCoordinates = new HashSet<Coordinate>(88);
 
                 for (var x = -1; x <= 1; x++)
                 {

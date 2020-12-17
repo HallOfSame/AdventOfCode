@@ -18,8 +18,11 @@ namespace Day17
 
             foreach (var coordinate in coordinatesToProcess)
             {
-                var activeNeighbors = input.ActiveCoordinates.Intersect(coordinate.GetNeighbors)
-                                           .Count();
+                var activeClone = new HashSet<Coordinate>(input.ActiveCoordinates);
+
+                activeClone.IntersectWith(coordinate.GetNeighbors);
+
+                var activeNeighbors = activeClone.Count;
 
                 var isActive = input.ActiveCoordinates.Contains(coordinate);
 
