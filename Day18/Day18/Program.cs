@@ -11,6 +11,11 @@ namespace Day18
         {
             var fileLines = File.ReadAllLines("PuzzleInput.txt");
 
+            fileLines = new[]
+                        {
+                            "2 * 3 + (4 * 5)"
+                        };
+
             var parser = new ExpressionParser();
 
             var sum = 0L;
