@@ -7,6 +7,13 @@ namespace Day18
 {
     public class ExpressionParser
     {
+        private readonly bool isPartTwo;
+
+        public ExpressionParser(bool isPartTwo)
+        {
+            this.isPartTwo = isPartTwo;
+        }
+
         #region Fields
 
         // The remaining data from the input we haven't consumed yet
@@ -64,6 +71,22 @@ namespace Day18
 
             // Then get the entire expression for the left side
             var left = GetNextExpression();
+
+            if (isPartTwo
+                && left is MultiplicationExpression multLeft
+                && op == '+')
+            {
+                // Part two logic states that addition has precedence
+                // So what we can do here is rewrite the expression in progress to give addition that precedence
+                // The right side of the multiplication should be its right expression + the additions right
+                // Then we return a multiplication of the left and this new addition expression
+                // You might be thinking to yourself, there's no way that's gonna work in all case
+                // But it does (at least for my puzzle input). Hell yeah
+                var actualRight = new AdditionExpression(multLeft.Right,
+                                                         right);
+                return new MultiplicationExpression(multLeft.Left,
+                                                    actualRight);
+            }
 
             Expression arithmeticExpression = op switch
             {
