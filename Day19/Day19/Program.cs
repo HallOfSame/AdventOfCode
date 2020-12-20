@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace Day19
 {
@@ -11,67 +13,98 @@ namespace Day19
 
         private static void Main(string[] args)
         {
+            var fileLines = File.ReadAllLines("PuzzleInput.txt");
+
             var rules = new List<GrammarRule>();
+            var testStrings = new List<string>();
 
-            rules.Add(new GrammarRule('S',
-                                      new List<string>
-                                      {
-                                          "IE"
-                                      }));
+            var parsingRules = true;
 
-            rules.Add(new GrammarRule('I',
-                                      new List<string>
-                                      {
-                                          "DA"
-                                      }));
+            // First build the initial rule list
+            foreach(var line in fileLines)
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    // Rules stop at first blank line
+                    parsingRules = false;
+                    continue;
+                }
 
-            rules.Add(new GrammarRule('A',
-                                      new List<string>
-                                      {
-                                          "BC",
-                                          "CB"
-                                      }));
+                if (parsingRules)
+                {
+                    var splitLine = line.Split(':');
 
-            rules.Add(new GrammarRule('B',
-                                      new List<string>
-                                      {
-                                          "DD",
-                                          "EE"
-                                      }));
+                    var ruleId = splitLine[0].Trim();
 
-            rules.Add(new GrammarRule('C',
-                                      new List<string>
-                                      {
-                                          "DE",
-                                          "ED"
-                                      }));
+                    var ruleOptions = splitLine[1].Split('|');
 
-            rules.Add(new GrammarRule('D',
-                                      new List<string>
-                                      {
-                                          "a"
-                                      }));
+                    var optionArray = ruleOptions.Select(x => x.Trim().Trim('"').Split(' ').ToArray()).ToList();
 
-            rules.Add(new GrammarRule('E',
-                                      new List<string>
-                                      {
-                                          "b"
-                                      }));
+                    rules.Add(new GrammarRule(ruleId, optionArray));
+                }
+                else
+                {
+                    testStrings.Add(line);
+                }
+            }
+
+            // Important that rule 0 is first
+            rules = rules.OrderBy(x => x.Representation).ToList();
+
+            // Can't have rules like 1: 2
+            var ruleRepresentations = rules.Select(x => x.Representation).ToHashSet();
+
+            var removableRules = rules.Where(r => r.Right.Count == 1 && r.Right.Any(op => op.Length == 1 && ruleRepresentations.Contains(op[0]))).ToList();
+
+            if (removableRules.Any())
+            {
+                Console.WriteLine($"Need to remove rules {string.Join(",", removableRules)}");
+                throw new NotImplementedException();
+            }
+
+            // Can't have rules like 1: 2 | 3
+            var replaceableRules = rules.Where(r => r.Right.Any(op => op.Length == 1 && ruleRepresentations.Contains(op[0]))).ToList();
+
+            if (replaceableRules.Any())
+            {
+                Console.WriteLine($"Need to replace rules {string.Join(",", replaceableRules)}");
+                throw new NotImplementedException();
+            }
+
+            var rulesTooLong = rules.Where(r => r.Right.Any(op => op.Length > 2)).ToList();
+
+            // Need only 2 length non terminals for the algorithm to work
+            if (rulesTooLong.Any())
+            {
+                Console.WriteLine($"Rules with too many options {string.Join(",", rulesTooLong)}");
+                throw new NotImplementedException("Not yet designed to handle fixing inputs like this.");
+            }
+
+            Console.WriteLine("RULES: ");
+            rules.ForEach(Console.WriteLine);
+            Console.WriteLine("");
 
             var solver = new CYKSolver(rules);
 
-            void CheckString(string inputString)
-            {
-                var isMatch = solver.MatchesGrammar(inputString);
+            var workingStrings = 0;
+            var testCount = 0;
 
-                Console.WriteLine($"{inputString} matches? {isMatch}.");
+            foreach (var test in testStrings)
+            {
+                Console.WriteLine($"Testing {test}. {testCount++}");
+
+                if (solver.MatchesGrammar(test))
+                {
+                    Console.WriteLine($"{test} is a match.");
+                    workingStrings++;
+                }
+                else
+                {
+                    Console.WriteLine($"{test} is not a match.");
+                }
             }
 
-            CheckString("ababbb");
-            CheckString("abbbab");
-            CheckString("bababa");
-            CheckString("aaabbb");
-            CheckString("aaaabbb");
+            Console.WriteLine($"Number of strings that match: {workingStrings}.");
         }
 
         #endregion
@@ -81,6 +114,12 @@ namespace Day19
     {
         private readonly List<GrammarRule> rules;
 
+        private readonly List<GrammarRule> terminalRules;
+
+        private readonly List<GrammarRule> nonTerminalRules;
+
+        private readonly Dictionary<string, int> ruleIndexLookup;
+
         public CYKSolver(List<GrammarRule> rules)
         {
             if (rules.Any(r => r.Right.Any(rhs => rhs.Length > 2)))
@@ -89,6 +128,16 @@ namespace Day19
             }
 
             this.rules = rules;
+
+            this.terminalRules = rules.Where(r => r.Right.Count == 1 && r.Right[0].Length == 1).ToList();
+            this.nonTerminalRules = rules.Where(r => r.Right.Count > 1 || r.Right[0].Length > 1).ToList();
+
+            ruleIndexLookup = new Dictionary<string, int>(rules.Count);
+
+            for(var i = 0; i < rules.Count; i++)
+            {
+                ruleIndexLookup.Add(rules[i].Representation, i + 1);
+            }
         }
 
         public bool MatchesGrammar(string input)
@@ -108,28 +157,29 @@ namespace Day19
             var table = new bool[inputLength + 1, inputLength + 1, rules.Count + 1];
 
             // Initialize everything to false
-            for(var i = 1; i <= inputLength; i++)
-            {
-                for(var j = 1; j <= inputLength; j++)
-                {
-                    for (var k = 1; k <= rules.Count; k++)
-                    {
-                        table[i, j, k] = false;
-                    }
-                }
-            }
-
+            // Don't need, default is false
+            //for(var i = 1; i <= inputLength; i++)
+            //{
+            //    for(var j = 1; j <= inputLength; j++)
+            //    {
+            //        for (var k = 1; k <= rules.Count; k++)
+            //        {
+            //            table[i, j, k] = false;
+            //        }
+            //    }
+            //}
+            
             // Now initialize the single characters
             for(var i = 1; i <= inputLength; i++)
             {
                 var characterInInput = input[i - 1];
 
-                foreach (var rule in rules)
+                foreach (var rule in terminalRules)
                 {
-                    if (rule.Right.Any(x => x[0] == characterInInput))
+                    if (rule.Right.Any(x => ((string)x[0])[0] == characterInInput))
                     {
                         // Starting at i, the single character can be derived by this rule
-                        table[i, 1, rules.IndexOf(rule) + 1] = true;
+                        table[i, 1, ruleIndexLookup[rule.Representation]] = true;
                     }
                 }
             }
@@ -148,36 +198,30 @@ namespace Day19
                     // k drives the second span of input we check
                     for (var k = 1; k <= i - 1; k++)
                     {
-                        foreach (var rule in rules)
+                        foreach (var rule in nonTerminalRules)
                         {
                             foreach (var option in rule.Right)
                             {
-                                // Not terminal if capitalized
-                                var isNonTerminal = option.Length == 2;
+                                // Find the rule indexes that match up with the rule we are checking
+                                // i.e. if our rule is B -> CD
+                                // We're finding the index of rule C and D
+                                var b = ruleIndexLookup[option[0]];
+                                var c = ruleIndexLookup[option[1]];
 
-                                if (isNonTerminal)
+                                // If we can derive the input starting at j with k char from rule b
+                                // And we can derive the input starting at j+k with i-k char from rule c
+                                if (table[j, k, b]
+                                    && table[j + k, i - k, c])
                                 {
-                                    // Find the rule indexes that match up with the rule we are checking
-                                    // i.e. if our rule is B -> CD
-                                    // We're finding the index of rule C and D
-                                    var b = rules.FindIndex(0, r => r.Representation == option[0]) + 1;
-                                    var c = rules.FindIndex(0, r => r.Representation == option[1]) + 1;
+                                    // Then we must be able to derive the input starting at j with i char from the rule we are checking
+                                    table[j, i, ruleIndexLookup[rule.Representation]] = true;
 
-                                    Debug.Assert(b > 0 && c > 0);
-
-                                    // If we can derive the input starting at j with k char from rule b
-                                    // And we can derive the input starting at j+k with i-k char from rule c
-                                    if (table[j, k, b] && table[j + k, i - k, c])
-                                    {
-                                        // Then we must be able to derive the input starting at j with i char from the rule we are checking
-                                        table[j, i, rules.IndexOf(rule) + 1] = true;
-
-                                        // Another way of putting it using: i = 3, j = 1, k = 2
-                                        // We can derive the substring from 1 with 2 char with the first half of this rule
-                                        // We can derive the substring from 3 (i.e. where the first substring ends) with 1 char with the second half of this rule
-                                        // So we can derive the full 3 char string (i = 3, so we are looking at length 3 strings) with this rule
-                                    }
+                                    // Another way of putting it using: i = 3, j = 1, k = 2
+                                    // We can derive the substring from 1 with 2 char with the first half of this rule
+                                    // We can derive the substring from 3 (i.e. where the first substring ends) with 1 char with the second half of this rule
+                                    // So we can derive the full 3 char string (i = 3, so we are looking at length 3 strings) with this rule
                                 }
+
                             }
                         }
                     }
@@ -193,18 +237,22 @@ namespace Day19
         }
     }
 
-    [DebuggerDisplay("{Representation.ToString()} {string.Join(\" | \", Right)}")]
     public class GrammarRule
     {
-        public GrammarRule(char representation,
-                           List<string> right)
+        public GrammarRule(string representation,
+                           List<string[]> right)
         {
             Representation = representation;
             Right = right;
         }
 
-        public char Representation { get; }
+        public string Representation { get; }
 
-        public List<string> Right { get; }
+        public List<string[]> Right { get; }
+
+        public override string ToString()
+        {
+            return $"{Representation}: {string.Join(" | ", Right.Select(x => string.Join(" ", x)))}";
+        }
     }
 }
