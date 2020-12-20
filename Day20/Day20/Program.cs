@@ -168,8 +168,6 @@ namespace Day20
 
                     image[i,
                           j] = match;
-
-                    DrawImage(image);
                 }
             }
 
@@ -228,12 +226,11 @@ namespace Day20
 
             bool MatchesSeaMonster(int xCo,
                                    int yCo,
-                                   List<string> seaMonsterToUse,
                                    out HashSet<(int, int)> coordinatesUsedToMatch)
             {
                 coordinatesUsedToMatch = new HashSet<(int, int)>();
 
-                foreach (var line in seaMonsterToUse)
+                foreach (var line in seaMonsterPattern)
                 {
                     foreach (var smChar in line)
                     {
@@ -241,7 +238,10 @@ namespace Day20
                         {
                             if (stitchedImage[xCo,
                                               yCo]
-                                != '#')
+                                != '#'
+                                && stitchedImage[xCo,
+                                                 yCo]
+                                != 'O')
                             {
                                 return false;
                             }
@@ -259,8 +259,7 @@ namespace Day20
                 return true;
             }
 
-            var allMatchingCoordinates = new HashSet<(int, int)>();
-
+            
             // Rotate 3 times and check each
             for (var r = 0; r < 4; r++)
             {
@@ -270,10 +269,13 @@ namespace Day20
                     {
                         if (MatchesSeaMonster(i,
                                               j,
-                                              seaMonsterPattern,
                                               out var coordinatesUsedToMatch))
                         {
-                            allMatchingCoordinates.UnionWith(coordinatesUsedToMatch);
+                            foreach (var coord in coordinatesUsedToMatch)
+                            {
+                                stitchedImage[coord.Item1,
+                                              coord.Item2] = 'O';
+                            }
                         }
                     }
                 }
@@ -293,10 +295,13 @@ namespace Day20
                     {
                         if (MatchesSeaMonster(i,
                                               j,
-                                              seaMonsterPattern,
                                               out var coordinatesUsedToMatch))
                         {
-                            allMatchingCoordinates.UnionWith(coordinatesUsedToMatch);
+                            foreach (var coord in coordinatesUsedToMatch)
+                            {
+                                stitchedImage[coord.Item1,
+                                              coord.Item2] = 'O';
+                            }
                         }
                     }
                 }
@@ -318,7 +323,7 @@ namespace Day20
                                       j]
                         == '#')
                     {
-
+                        // All our monster pieces are 'O' now
                         nonMonsterHash++;
                     }
                 }
