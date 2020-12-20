@@ -178,12 +178,159 @@ namespace Day20
                 tile.FixOrientation();
             }
 
+            // This makes the example match their layout
+
+            // Rotate left 90 3 times
+            image = RotateMatrixCounterClockwise(image);
+            image = RotateMatrixCounterClockwise(image);
+            image = RotateMatrixCounterClockwise(image);
+            // Flip horizontal
+            image = FlipImage(image);
+
+            DrawImage(image);
+
             var singleImageSize = (tiles[0]
                                    .Image.Count
                                    - 2);
 
             var stitchedImageSize = singleImageSize * size;
 
+            var stitchedImage = GetStitchedImage(stitchedImageSize: stitchedImageSize,
+                                                 image: image,
+                                                 singleImageSize: singleImageSize);
+
+            
+
+            DrawImage(stitchedImage);
+
+            // TODO load in the sea monster pattern
+            // Then iterate the image like we did the tiles earlier, flip + rotate either the sea monster pattern or the image
+            // Keep track of coordinates of sea monster body tiles
+            // Then loop through and count the '#' that aren't in that list of coordinates
+
+            var seaMonsterL1 = "                  # ";
+            var seaMonsterL2 = "#    ##    ##    ###";
+            var seaMonsterL3 = " #  #  #  #  #  #   ";
+
+            var seaMonsterPattern = new List<string>
+                                    {
+                                        seaMonsterL1,
+                                        seaMonsterL2,
+                                        seaMonsterL3
+                                    };
+
+            var length = seaMonsterPattern[0]
+                .Length;
+            var height = seaMonsterPattern.Count;
+
+            var x = stitchedImage.GetLength(0);
+            var y = stitchedImage.GetLength(1);
+
+            bool MatchesSeaMonster(int xCo,
+                                   int yCo,
+                                   List<string> seaMonsterToUse,
+                                   out HashSet<(int, int)> coordinatesUsedToMatch)
+            {
+                coordinatesUsedToMatch = new HashSet<(int, int)>();
+
+                foreach (var line in seaMonsterToUse)
+                {
+                    foreach (var smChar in line)
+                    {
+                        if (smChar == '#')
+                        {
+                            if (stitchedImage[xCo,
+                                              yCo]
+                                != '#')
+                            {
+                                return false;
+                            }
+
+                            coordinatesUsedToMatch.Add((xCo, yCo));
+                        }
+
+                        yCo++;
+                    }
+
+                    yCo -= line.Length;
+                    xCo++;
+                }
+
+                return true;
+            }
+
+            var allMatchingCoordinates = new HashSet<(int, int)>();
+
+            // Rotate 3 times and check each
+            for (var r = 0; r < 4; r++)
+            {
+                for (var i = 0; i < x - height; i++)
+                {
+                    for (var j = 0; j < y - length; j++)
+                    {
+                        if (MatchesSeaMonster(i,
+                                              j,
+                                              seaMonsterPattern,
+                                              out var coordinatesUsedToMatch))
+                        {
+                            allMatchingCoordinates.UnionWith(coordinatesUsedToMatch);
+                        }
+                    }
+                }
+
+                stitchedImage = RotateMatrixCounterClockwise(stitchedImage);
+            }
+
+            // Flip the image
+            stitchedImage = FlipImage(stitchedImage);
+
+            // Rotate 3 more times and flip that way
+            for (var r = 0; r < 4; r++)
+            {
+                for (var i = 0; i < x - height; i++)
+                {
+                    for (var j = 0; j < y - length; j++)
+                    {
+                        if (MatchesSeaMonster(i,
+                                              j,
+                                              seaMonsterPattern,
+                                              out var coordinatesUsedToMatch))
+                        {
+                            allMatchingCoordinates.UnionWith(coordinatesUsedToMatch);
+                        }
+                    }
+                }
+
+                stitchedImage = RotateMatrixCounterClockwise(stitchedImage);
+            }
+
+
+            x = stitchedImage.GetLength(0);
+            y = stitchedImage.GetLength(1);
+
+            var nonMonsterHash = 0;
+
+            for (var i = 0; i < x; i++)
+            {
+                for (var j = 0; j < y; j++)
+                {
+                    if (stitchedImage[i,
+                                      j]
+                        == '#')
+                    {
+
+                        nonMonsterHash++;
+                    }
+                }
+            }
+
+            Console.WriteLine($"Non monster #: {nonMonsterHash}");
+        }
+
+        private static char[,] GetStitchedImage(int stitchedImageSize,
+                                                Tile[,] image,
+                                                int singleImageSize)
+        {
             var stitchedImage = new char[stitchedImageSize, stitchedImageSize];
 
             var x = image.GetLength(0);
@@ -194,10 +341,11 @@ namespace Day20
                 for (var j = 0; j < y; j++)
                 {
                     var imageAtThisLoc = image[i,
-                                              j].Image;
+                                               j]
+                        .Image;
 
                     // 8x8 in the example
-                    for(var k = 0; k < imageAtThisLoc.Count - 2; k++)
+                    for (var k = 0; k < imageAtThisLoc.Count - 2; k++)
                     {
                         var imageLine = imageAtThisLoc[k + 1];
 
@@ -213,12 +361,52 @@ namespace Day20
                 }
             }
 
-            DrawImage(stitchedImage);
+            return stitchedImage;
+        }
 
-            // TODO load in the sea monster pattern
-            // Then iterate the image like we did the tiles earlier, flip + rotate either the sea monster pattern or the image
-            // Keep track of coordinates of seamonster body tiles
-            // Then loop through and count the '#' that aren't in that list of coordinates
+        public static T[,] FlipImage<T>(T[,] oldMatrix)
+        {
+            var newMatrix = new T[oldMatrix.GetLength(1), oldMatrix.GetLength(0)];
+
+            var totalRows = oldMatrix.GetLength(0);
+            var totalColumns = oldMatrix.GetLength(1);
+
+            for (var oldColumn = 0; oldColumn < totalColumns; oldColumn++)
+            {
+                var newColumn = totalColumns - oldColumn - 1;
+
+                for (var oldRow = 0; oldRow < totalRows; oldRow++)
+                {
+                    newMatrix[oldRow,
+                              newColumn] = oldMatrix[oldRow,
+                                                     oldColumn];
+                }
+            }
+
+            return newMatrix;
+        }
+
+        public static T[,] RotateMatrixCounterClockwise<T>(T[,] oldMatrix)
+        {
+            var newMatrix = new T[oldMatrix.GetLength(1), oldMatrix.GetLength(0)];
+
+            var newRow = 0;
+
+            for (var oldColumn = oldMatrix.GetLength(1) - 1; oldColumn >= 0; oldColumn--)
+            {
+                var newColumn = 0;
+                for (var oldRow = 0; oldRow < oldMatrix.GetLength(0); oldRow++)
+                {
+                    newMatrix[newRow,
+                              newColumn] = oldMatrix[oldRow,
+                                                     oldColumn];
+                    newColumn++;
+                }
+
+                newRow++;
+            }
+
+            return newMatrix;
         }
 
         private static void DrawImage(char[,] image)
