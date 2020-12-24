@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Day24
 {
@@ -107,7 +108,65 @@ namespace Day24
                 }
             }
 
+            // PT 1
             Console.WriteLine($"Black tiles after moves: {blackTiles.Count}.");
+
+
+            HashSet<(int, int)> GetNeighbors((int, int) tile)
+            {
+                var (q, r) = tile;
+
+                return new HashSet<(int, int)>
+                       {
+                           (q, r - 1),
+                           (q + 1, r - 1),
+                           (q + 1, r),
+                           (q, r + 1),
+                           (q - 1, r + 1),
+                           (q - 1, r)
+                       };
+            }
+
+            var daysToProcess = 100;
+
+            var currentBlackTiles = new HashSet<(int, int)>(blackTiles);
+
+            var nextDayBlackTiles = new HashSet<(int, int)>(currentBlackTiles.Count);
+
+            for (var i = 1; i <= daysToProcess; i++)
+            {
+                var tilesToCheck = currentBlackTiles.SelectMany(x => GetNeighbors(x))
+                                                    .Concat(currentBlackTiles)
+                                                    .Distinct()
+                                                    .ToList();
+
+                foreach(var tile in tilesToCheck)
+                {
+                    var adjacentBlackTiles = GetNeighbors(tile)
+                        .Count(x => currentBlackTiles.Contains(x));
+
+                    bool isBlackNextDay;
+
+                    if (currentBlackTiles.Contains(tile))
+                    {
+                        isBlackNextDay = !(adjacentBlackTiles == 0 || adjacentBlackTiles > 2);
+                    }
+                    else
+                    {
+                        isBlackNextDay = adjacentBlackTiles == 2;
+                    }
+
+                    if (isBlackNextDay)
+                    {
+                        nextDayBlackTiles.Add(tile);
+                    }
+                }
+
+                currentBlackTiles = new HashSet<(int, int)>(nextDayBlackTiles);
+                nextDayBlackTiles.Clear();
+            }
+
+            Console.WriteLine($"Black tiles after {daysToProcess} days of moves: {currentBlackTiles.Count}.");
         }
 
         #endregion
@@ -129,64 +188,5 @@ namespace Day24
         NorthWest,
 
         NorthEast
-    }
-
-    internal class Tile
-    {
-        #region Constructors
-
-        public Tile(int q,
-                    int r)
-        {
-            Q = q;
-            R = r;
-        }
-
-        #endregion
-
-        #region Instance Properties
-
-        public int Q { get; }
-
-        public int R { get; }
-
-        #endregion
-
-        #region Instance Methods
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null,
-                                obj))
-            {
-                return false;
-            }
-
-            if (ReferenceEquals(this,
-                                obj))
-            {
-                return true;
-            }
-
-            if (obj.GetType() != this.GetType())
-            {
-                return false;
-            }
-
-            return Equals((Tile)obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(Q,
-                                    R);
-        }
-
-        protected bool Equals(Tile other)
-        {
-            return Q == other.Q && R == other.R;
-        }
-
-        #endregion
     }
 }
