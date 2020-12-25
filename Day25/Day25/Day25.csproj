@@ -5,14 +5,4 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="PuzzleInput.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="PuzzleInput.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
 </Project>
