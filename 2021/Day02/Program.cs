@@ -25,7 +25,31 @@ foreach (var command in puzzleInput)
 
 Console.WriteLine($"Horiz: {horizontalPos} Vert: {verticalPos}. Answer: {horizontalPos * verticalPos}.");
 
+// Part 2
 
+var aim = 0;
+horizontalPos = 0;
+verticalPos = 0;
+
+foreach (var command in puzzleInput)
+{
+    switch (command.Direction)
+    {
+        case CommandDirection.Forward:
+            horizontalPos += command.Distance;
+
+            verticalPos += (aim * command.Distance);
+            break;
+        case CommandDirection.Up:
+            aim -= command.Distance;
+            break;
+        case CommandDirection.Down:
+            aim += command.Distance;
+            break;
+    }
+}
+
+Console.WriteLine($"Horiz: {horizontalPos} Vert: {verticalPos}. Answer: {horizontalPos * verticalPos}.");
 
 enum CommandDirection
 {
