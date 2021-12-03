@@ -1,14 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-using IntCodeInterpreter.Extensions;
+﻿using IntCodeInterpreter.Extensions;
 using IntCodeInterpreter.Models;
 using IntCodeInterpreter.Models.Instructions;
 using IntCodeInterpreter.Models.Instructions.Arithmetic;
 using IntCodeInterpreter.Models.Instructions.Comparison;
 using IntCodeInterpreter.Models.Instructions.FlowControl.Jump;
 using IntCodeInterpreter.Models.Instructions.IO;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace IntCodeInterpreter
 {
@@ -25,8 +24,23 @@ namespace IntCodeInterpreter
                               });
         }
 
+        public void ProcessOperations(List<int> mem, int input, Action<int> onOutput)
+        {
+            var calledOnce = false;
+
+            ProcessOperations(mem, () =>
+            {
+                if (!calledOnce)
+                {
+                    return input;
+                }
+
+                throw new InvalidOperationException("Called for multiple inputs.");
+            }, onOutput);
+        }
+
         public void ProcessOperations(List<int> mem,
-                                      int input,
+                                      Func<int> getInput,
                                       Action<int> onOutput)
         {
             var memory = mem.ToArray();
@@ -78,7 +92,7 @@ namespace IntCodeInterpreter
                                              ref instructionPointer,
                                              memory);
                         break;
-                    case {} compareCode when opCode.IsComparison():
+                    case { } compareCode when opCode.IsComparison():
                         instruction = BuildCompareInstruction(GetArrayForInstruction(4),
                                                               compareCode);
 
@@ -89,7 +103,8 @@ namespace IntCodeInterpreter
                         break;
                     case OpCode.Input:
                         instruction = BuildInputInstruction(GetArrayForInstruction(2));
-                        memory[((InputInstruction)instruction).Destination.Value] = input;
+
+                        memory[((InputInstruction)instruction).Destination.Value] = getInput();
                         break;
                     case OpCode.Output:
                         instruction = BuildOutputInstruction(GetArrayForInstruction(2));
