@@ -8,8 +8,6 @@ var heigth = lines.SelectMany(x => new int[] { x.Start.Y, x.End.Y }).Max() + 1;
 
 var field = new Field(width, heigth);
 
-// Part 1
-
 foreach(var line in lines)
 {
     if (line.Start.X == line.End.X)
@@ -30,12 +28,21 @@ foreach(var line in lines)
     }
     else
     {
-        // Part 1, ignore diagonals
-        //throw new InvalidDataException("Did not expect diagonal line.");
+        // Comment out for Part 1, where we ignore diagonals
+        var yMult = line.Start.Y > line.End.Y ? -1 : 1;
+        var xMult = line.Start.X > line.End.X ? -1 : 1;
+
+        var lineLength = Math.Abs(line.Start.X - line.End.X);
+
+        for(var i = 0; i <= lineLength; i++)
+        {
+            field.FloorData[line.Start.X + (i * xMult), line.Start.Y + (i * yMult)] += 1;
+        }
     }
 }
 
-Console.WriteLine(field.ToString());
+// Kinda useless on real input
+//Console.WriteLine(field.ToString());
 
 var floorTilesFlattened = field.FloorData.Cast<int>();
 
