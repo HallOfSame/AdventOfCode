@@ -35,6 +35,7 @@ void RunFishLifeSimulation(int numberOfDays)
         // Add the new fish for this cycle
         fishLives[NewFishCycleStart] = newFishThisDay;
 
+        // Original Part 1 code:
         //var newFish = numbers.Count(x => x == 0);
 
         //numbers = numbers.Select(x => x == 0 ? NormalCycleStart : x - 1)
