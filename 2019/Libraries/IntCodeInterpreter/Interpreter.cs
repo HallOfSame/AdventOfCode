@@ -3,6 +3,7 @@ using IntCodeInterpreter.Models;
 using IntCodeInterpreter.Models.Instructions;
 using IntCodeInterpreter.Models.Instructions.Arithmetic;
 using IntCodeInterpreter.Models.Instructions.Comparison;
+using IntCodeInterpreter.Models.Instructions.FlowControl;
 using IntCodeInterpreter.Models.Instructions.FlowControl.Jump;
 using IntCodeInterpreter.Models.Instructions.IO;
 using System;
@@ -15,7 +16,7 @@ namespace IntCodeInterpreter
     {
         #region Instance Methods
 
-        public void ProcessOperations(List<int> memory)
+        public void ProcessOperations(List<long> memory)
         {
             ProcessOperations(memory,
                               0,
@@ -24,7 +25,7 @@ namespace IntCodeInterpreter
                               });
         }
 
-        public void ProcessOperations(List<int> mem, int input, Action<int> onOutput)
+        public void ProcessOperations(List<long> mem, long input, Action<long> onOutput)
         {
             var calledOnce = false;
 
@@ -39,13 +40,21 @@ namespace IntCodeInterpreter
             }, onOutput);
         }
 
-        public void ProcessOperations(List<int> mem,
-                                      Func<int> getInput,
-                                      Action<int> onOutput)
-        {
-            var memory = mem.ToArray();
+        private long relativeBase = 0;
 
-            var instructionPointer = 0;
+        public void ProcessOperations(List<long> mem,
+                                      Func<long> getInput,
+                                      Action<long> onOutput)
+        {
+            relativeBase = 0;
+
+            var totalMemorySize = 4096;
+
+            var additionalMemory = totalMemorySize - mem.Count();
+
+            var memory = mem.ToArray().Concat(Enumerable.Repeat(0L, additionalMemory)).ToArray();
+
+            var instructionPointer = 0L;
 
             while (true)
             {
@@ -66,9 +75,9 @@ namespace IntCodeInterpreter
 
                 Instruction instruction;
 
-                int[] GetArrayForInstruction(int size)
+                long[] GetArrayForInstruction(int size)
                 {
-                    return memory.Skip(instructionPointer)
+                    return memory.Skip((int)instructionPointer)
                                  .Take(size)
                                  .ToArray();
                 }
@@ -104,13 +113,19 @@ namespace IntCodeInterpreter
                     case OpCode.Input:
                         instruction = BuildInputInstruction(GetArrayForInstruction(2));
 
-                        memory[((InputInstruction)instruction).Destination.Value] = getInput();
+                        WriteValueToMemory(getInput(), memory, ((InputInstruction)instruction).Destination);
                         break;
                     case OpCode.Output:
                         instruction = BuildOutputInstruction(GetArrayForInstruction(2));
 
                         onOutput(GetParameterValue(((OutputInstruction)instruction).Source,
                                                    memory));
+                        break;
+                    case OpCode.AdjustRelativeBase:
+                        instruction = BuildAdjustRelativeBaseInstruction(GetArrayForInstruction(2));
+
+                        relativeBase += GetParameterValue(((AdjustRelativeBaseInstruction)instruction).Amount,
+                                           memory);
                         break;
                     case OpCode.Unknown:
                         throw new InvalidOperationException("Unknown op code encountered.");
@@ -122,7 +137,21 @@ namespace IntCodeInterpreter
             }
         }
 
-        private ArithmeticInstruction BuildArithmeticInstruction(int[] instruction,
+        private void WriteValueToMemory(long value,
+                                        long[] memory,
+                                        Parameter destination)
+        {
+            var address = destination.Mode switch
+            {
+                ParameterMode.Position => destination.Value,
+                ParameterMode.Relative => destination.Value + relativeBase,
+                _ => throw new InvalidOperationException($"Cannot write using paremeter mode: {destination.Mode}.")
+            };
+
+            memory[address] = value;
+        }
+
+        private ArithmeticInstruction BuildArithmeticInstruction(long[] instruction,
                                                                  OpCode opCode)
         {
             var opOne = new Parameter(instruction[1],
@@ -150,7 +179,7 @@ namespace IntCodeInterpreter
             throw new ArgumentOutOfRangeException(nameof(opCode));
         }
 
-        private ComparisonInstruction BuildCompareInstruction(int[] instruction,
+        private ComparisonInstruction BuildCompareInstruction(long[] instruction,
                                                               OpCode opCode)
         {
             var opOne = new Parameter(instruction[1],
@@ -179,14 +208,14 @@ namespace IntCodeInterpreter
             throw new ArgumentOutOfRangeException(nameof(opCode));
         }
 
-        private InputInstruction BuildInputInstruction(int[] instruction)
+        private InputInstruction BuildInputInstruction(long[] instruction)
         {
             return new InputInstruction(new Parameter(instruction[1],
                                                       GetMode(instruction[0],
                                                               1)));
         }
 
-        private JumpInstruction BuildJumpInstruction(int[] instruction,
+        private JumpInstruction BuildJumpInstruction(long[] instruction,
                                                      OpCode opCode)
         {
             var opOne = new Parameter(instruction[1],
@@ -209,14 +238,21 @@ namespace IntCodeInterpreter
             throw new ArgumentOutOfRangeException(nameof(opCode));
         }
 
-        private OutputInstruction BuildOutputInstruction(int[] instruction)
+        private OutputInstruction BuildOutputInstruction(long[] instruction)
         {
             return new OutputInstruction(new Parameter(instruction[1],
                                                        GetMode(instruction[0],
                                                                1)));
         }
 
-        private ParameterMode GetMode(int instruction,
+        private AdjustRelativeBaseInstruction BuildAdjustRelativeBaseInstruction(long[] instruction)
+        {
+            return new AdjustRelativeBaseInstruction(new Parameter(instruction[1],
+                                                      GetMode(instruction[0],
+                                                              1)));
+        }
+
+        private ParameterMode GetMode(long instruction,
                                       int parameterNumber)
         {
             var div = (int)Math.Pow(10,
@@ -227,8 +263,8 @@ namespace IntCodeInterpreter
             return (ParameterMode)param;
         }
 
-        private int GetParameterValue(Parameter param,
-                                      int[] memory)
+        private long GetParameterValue(Parameter param,
+                                      long[] memory)
         {
             switch (param.Mode)
             {
@@ -236,19 +272,21 @@ namespace IntCodeInterpreter
                     return memory[param.Value];
                 case ParameterMode.Immediate:
                     return param.Value;
+                case ParameterMode.Relative:
+                    return memory[param.Value + relativeBase];
             }
 
             throw new ArgumentOutOfRangeException(nameof(param.Mode));
         }
 
         private void ProcessArithmeticOperation(ArithmeticInstruction instruction,
-                                                int[] memory)
+                                                long[] memory)
         {
             var valOne = GetParameterValue(instruction.OperandOne,
                                            memory);
             var valTwo = GetParameterValue(instruction.OperandTwo,
                                            memory);
-            int result;
+            long result;
 
             switch (instruction.OpCode)
             {
@@ -262,11 +300,11 @@ namespace IntCodeInterpreter
                     throw new ArgumentOutOfRangeException(nameof(instruction.OpCode));
             }
 
-            memory[instruction.Destination.Value] = result;
+            WriteValueToMemory(result, memory, instruction.Destination);
         }
 
         private void ProcessCompareOperation(ComparisonInstruction instruction,
-                                             int[] memory)
+                                             long[] memory)
         {
             var valueOne = GetParameterValue(instruction.ValueOne,
                                              memory);
@@ -292,12 +330,12 @@ namespace IntCodeInterpreter
                     throw new ArgumentOutOfRangeException(nameof(instruction.OpCode));
             }
 
-            memory[instruction.Destination.Value] = valueToSet;
+            WriteValueToMemory(valueToSet, memory, instruction.Destination);
         }
 
         private void ProcessJumpOperation(JumpInstruction instruction,
-                                          ref int instructionPointer,
-                                          int[] memory)
+                                          ref long instructionPointer,
+                                          long[] memory)
         {
             var value = GetParameterValue(instruction.Value,
                                           memory);

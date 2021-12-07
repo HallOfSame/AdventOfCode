@@ -20,6 +20,8 @@
 
         Equals = 8,
 
+        AdjustRelativeBase = 9,
+
         EndExecution = 99
     }
 }

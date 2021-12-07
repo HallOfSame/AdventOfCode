@@ -9,12 +9,12 @@ namespace IntCodeInterpreter.Input
     {
         #region Instance Methods
 
-        public async Task<List<int>> ReadOperationsFromFile(string fileName)
+        public async Task<List<long>> ReadOperationsFromFile(string fileName)
         {
             var fileText = await File.ReadAllTextAsync(fileName);
 
             var ints = fileText.Split(',')
-                               .Select(int.Parse)
+                               .Select(long.Parse)
                                .ToList();
 
             return ints;
