@@ -21,15 +21,17 @@ for(var i = 0; i < input.Count; i++)
         var mapSpace = new MapSpace
         {
             HasAsteroid = space == '#',
-            X = i,
-            Y = k
+            X = k,
+            Y = i
         };
 
-        map.MapSpaces[i, k] = mapSpace;
+        map.MapSpaces[k, i] = mapSpace;
     }
 }
 
 var asteroids = map.Asteroids;
+
+// Part 1
 
 var maxDetectable = 0;
 
@@ -50,55 +52,61 @@ int GCD(int a, int b)
     return a | b;
 }
 
-foreach (var asteroid in asteroids)
+// Needed for part 2
+MapSpace station = null;
+
+(int x, int y) GetSlopeInt(MapSpace asteroid, MapSpace otherAsteroid)
+{
+    var slopeX = otherAsteroid.X - asteroid.X;
+    var slopeY = otherAsteroid.Y - asteroid.Y;
+
+    // Simplify the slope
+    if (slopeY == 0)
+    {
+        // Direct X line
+        slopeX = slopeX > 0 ? 1 : -1;
+    }
+    else if (slopeX == 0)
+    {
+        // Direct Y line
+        slopeY = slopeY > 0 ? 1 : -1;
+    }
+    else
+    {
+        // Check GCD (implementation needs positive values)
+        var gcd = GCD(Math.Abs(slopeY), Math.Abs(slopeX));
+
+        // If it wasn't 1, divide both by the returned value to get the simplified slope
+        // Otherwise we can miss blocked coordinates along the path
+        if (gcd != 1)
+        {
+            slopeY /= gcd;
+            slopeX /= gcd;
+        }
+    }
+
+    return (slopeX, slopeY);
+}
+
+List<MapSpace> GetAsteroidsVisibleFromSpace(MapSpace startSpace,
+                                            List<MapSpace> otherAsteroids)
 {
     var blockedCoordinates = new HashSet<(int x, int y)>();
 
-    foreach(var otherAsteroid in asteroids)
+    foreach (var otherAsteroid in otherAsteroids)
     {
-        if (asteroid == otherAsteroid)
-        {
-            continue;
-        }
-
         if (blockedCoordinates.Contains((otherAsteroid.X, otherAsteroid.Y)))
         {
             continue;
         }
 
-        var slopeX = otherAsteroid.X - asteroid.X;
-        var slopeY = otherAsteroid.Y - asteroid.Y;
-
-        // Simplify the slope
-        if (slopeY == 0)
-        {
-            // Direct X line
-            slopeX = slopeX > 0 ? 1 : -1;
-        }
-        else if (slopeX == 0)
-        {
-            // Direct Y line
-            slopeY = slopeY > 0 ? 1 : -1;
-        }
-        else
-        {
-            // Check GCD (implementation needs positive values)
-            var gcd = GCD(Math.Abs(slopeY), Math.Abs(slopeX));
-
-            // If it wasn't 1, divide both by the returned value to get the simplified slope
-            // Otherwise we can miss blocked coordinates along the path
-            if (gcd != 1)
-            {
-                slopeY /= gcd;
-                slopeX /= gcd;
-            }
-        }
+        var (slopeX, slopeY) = GetSlopeInt(startSpace, otherAsteroid);
 
         var currentX = otherAsteroid.X;
         var currentY = otherAsteroid.Y;
 
         // Increment by the slope from the other asteroid until we hit the end of the map
-        while(true)
+        while (true)
         {
             var nextCoordinateInLine = (x: currentX + slopeX, y: currentY + slopeY);
 
@@ -114,14 +122,80 @@ foreach (var asteroid in asteroids)
         }
     }
 
-    var totalVisible = asteroids.Where(x => x != asteroid && !blockedCoordinates.Contains((x.X, x.Y)))
-        .Count();
+    var visibleAsteroids = asteroids.Where(x => x != startSpace && !blockedCoordinates.Contains((x.X, x.Y)))
+        .ToList();
+
+    return visibleAsteroids;
+}
+
+foreach (var asteroid in asteroids)
+{
+    var totalVisible = GetAsteroidsVisibleFromSpace(asteroid, asteroids.Except(new[] { asteroid }).ToList()).Count;
 
     if (totalVisible > maxDetectable)
     {
         maxDetectable = totalVisible;
         Console.WriteLine($"Better option found at ({asteroid.X}, {asteroid.Y}) with {totalVisible}.");
+        station = asteroid;
     }
 }
 
 Console.WriteLine($"Max visible at best option: {maxDetectable}.");
+
+// Part 2
+var remainingAsteroids = asteroids.Except(new[]
+{
+    station
+}).ToList();
+
+var vaporizedCount = 0;
+
+const int PuzzleEndVaporizeCount = 200;
+
+while(true)
+{
+    var visibleAsteroids = GetAsteroidsVisibleFromSpace(station, remainingAsteroids);
+
+    if (vaporizedCount + visibleAsteroids.Count < PuzzleEndVaporizeCount)
+    {
+        // Don't need to do the extra math to find the order yet
+        remainingAsteroids.RemoveAll(x => visibleAsteroids.Contains(x));
+    }
+    else
+    {
+        var atanCalc = visibleAsteroids.Select(x =>
+        {
+            // Ordering by Atan which can tell us the degrees of angle from one point to another
+            // Since the laser is pointing straight up, we start at -90 somehow (math man, idk)
+            var deltaX = x.X - station.X;
+            var deltaY = x.Y - station.Y;
+            return new
+            {
+                // Add 90 so that our first value would have an atan of 0
+                atan = (Math.Atan2(deltaY, deltaX) * (180 / Math.PI)) + 90,
+                asteroid = x
+            };
+        })
+            // Order negative values to the end, (false comes before true in bool ordering)
+            .OrderBy(x => x.atan < 0)
+            // Then order ascending, so the list ends up 0, 1, 2, 3, -1, -2, -3, ...
+            .ThenBy(x => x.atan)
+            .ToList();
+
+        foreach (var calc in atanCalc)
+        {
+            vaporizedCount++;
+
+            var asteroid = calc.asteroid;
+
+            remainingAsteroids.Remove(asteroid);
+
+            if (vaporizedCount == PuzzleEndVaporizeCount)
+            {
+                Console.WriteLine($"Asteroid 200: ({asteroid.X}, {asteroid.Y}). Puzzle answer: {(asteroid.X * 100) + asteroid.Y}.");
+                break;
+            }
+        }
+
+    }
+}
