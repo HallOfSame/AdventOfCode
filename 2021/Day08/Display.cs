@@ -14,7 +14,8 @@
 
     internal class Segment
     {
-        public Segment(SignalWire[] signalWires)
+        public Segment(SignalWire[] signalWires,
+                       bool determineDigit)
         {
             EnabledWires = signalWires;
 
@@ -27,7 +28,24 @@
             }
             else
             {
-                DisplayedDigit = Digit.Unknown;
+                if (determineDigit)
+                {
+                    var correctSignal = CorrectSignals.Where(x => x.Value.ToHashSet().SetEquals(signalWires.ToHashSet()))
+                        .ToList();
+
+                    if (correctSignal.Count == 1)
+                    {
+                        DisplayedDigit = correctSignal[0].Key;
+                    }
+                    else
+                    {
+                        DisplayedDigit = Digit.Unknown;
+                    }
+                }
+                else
+                {
+                    DisplayedDigit = Digit.Unknown;
+                }
             }
         }
 
