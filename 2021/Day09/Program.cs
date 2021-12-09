@@ -18,6 +18,8 @@ class Day9Problem : ProblemBase
 {
     private Map map;
 
+    private MapPoint[] lowPoints;
+
     public override async Task ReadInput()
     {
         var points = await new MapPointReader().ReadInputFromFile();
@@ -31,14 +33,20 @@ class Day9Problem : ProblemBase
 
     protected override Task<string> SolvePartOneInternal()
     {
-        var lowPointRiskLevels = map.Points.Cast<MapPoint>().Where(x => map.IsLowPoint(x)).Select(x => x.RiskLevel).Sum().ToString();
+        lowPoints = map.Points.Cast<MapPoint>().Where(x => map.IsLowPoint(x)).ToArray();
+
+        var lowPointRiskLevels = lowPoints.Select(x => x.RiskLevel).Sum().ToString();
 
         return Task.FromResult(lowPointRiskLevels);
     }
 
     protected override Task<string> SolvePartTwoInternal()
     {
-        throw new NotImplementedException();
+        var basinSizes = lowPoints.Select(x => map.GetBasinSize(x)).OrderByDescending(x => x).ToArray();
+
+        var partTwoAnswer = basinSizes.Take(3).Aggregate((curr, next) => curr *= next);
+
+        return Task.FromResult(partTwoAnswer.ToString());
     }
 }
 
@@ -62,6 +70,14 @@ class MapPointReader : FileReader<MapPoint[]>
 
         return pointHeights;
     }
+}
+
+enum Direction
+{
+    Up,
+    Down,
+    Left,
+    Right
 }
 
 class Map
@@ -89,32 +105,104 @@ class Map
         return y >= 0 && y < Height;
     }
 
+    private MapPoint? GetPointInDirection(Direction direction, MapPoint currentPoint)
+    {
+        var x = currentPoint.X;
+        var y = currentPoint.Y;
+
+        switch(direction)
+        {
+            case Direction.Up:
+                y -= 1;
+                break;
+                case Direction.Down:
+                y += 1;
+                break;
+            case Direction.Left:
+                x -= 1;
+                break;
+            case Direction.Right:
+                x += 1;
+                break;
+        }
+
+        if (!IsValidX(x) || !IsValidY(y))
+        {
+            return null;
+        }
+
+        return Points[x, y];
+    }
+
+    private bool DoesBasinContinue(MapPoint nextPoint, MapPoint currentBasinPoint)
+    {
+        return nextPoint.Height != 9 && nextPoint.Height > currentBasinPoint.Height;
+    }
+
+    public int GetBasinSize(MapPoint lowPoint)
+    {
+        var allDirections = Enum.GetValues<Direction>();
+
+        // Holds the points we are expanding from
+        var currentPointsToEvaluate = new[] { lowPoint };
+
+        // Holds all points marked as being in the current basin
+        var pointsInBasin = new HashSet<MapPoint>
+        {
+            lowPoint
+        };
+
+        while (true)
+        {
+            currentPointsToEvaluate = currentPointsToEvaluate.Select(x => new
+                {
+                    // Grab the points in each direction from our current point, provided they are valid and not already in the basin
+                    currentPoint = x,
+                    otherDirections = allDirections.Select(dir => GetPointInDirection(dir, x)).Where(x => x != null && !pointsInBasin.Contains(x)).ToArray()
+                })
+                // From them, get the points where the basin continues on
+                .SelectMany(x => x.otherDirections.Where(newPoint => DoesBasinContinue(newPoint, x.currentPoint)))
+                .ToArray();
+
+            // We've exhausted the search in all directions
+            if (!currentPointsToEvaluate.Any())
+            {
+                break;
+            }
+
+            // Add the points to our hash set before looping
+            foreach(var newPoint in currentPointsToEvaluate)
+            {
+                pointsInBasin.Add(newPoint);
+            }
+        }
+
+        return pointsInBasin.Count;
+    }
+
     public bool IsLowPoint(MapPoint pointToCheck)
     {
-        var currentPointX = pointToCheck.X;
-        var currentPointY = pointToCheck.Y;
+        var up = GetPointInDirection(Direction.Up, pointToCheck);
+        var down = GetPointInDirection(Direction.Down, pointToCheck);
+        var left = GetPointInDirection(Direction.Left, pointToCheck);
+        var right = GetPointInDirection(Direction.Right, pointToCheck);
 
-        var upY = currentPointY - 1;
-        var downY = currentPointY + 1;
-        var leftX = currentPointX - 1;
-        var rightX = currentPointX + 1;
-
-        if (IsValidX(leftX) && Points[leftX, currentPointY].Height <= pointToCheck.Height)
+        if (up != null && up.Height <= pointToCheck.Height)
         {
             return false;
         }
 
-        if (IsValidX(rightX) && Points[rightX, currentPointY].Height <= pointToCheck.Height)
+        if (down != null && down.Height <= pointToCheck.Height)
         {
             return false;
         }
 
-        if (IsValidY(upY) && Points[currentPointX, upY].Height <= pointToCheck.Height)
+        if (left != null && left.Height <= pointToCheck.Height)
         {
             return false;
         }
 
-        if (IsValidY(downY) && Points[currentPointX, downY].Height <= pointToCheck.Height)
+        if (right != null && right.Height <= pointToCheck.Height)
         {
             return false;
         }
@@ -151,4 +239,16 @@ class MapPoint
     public int Height { get; set; }
 
     public int RiskLevel => Height + 1;
+
+    public override bool Equals(object? obj)
+    {
+        return obj is MapPoint point &&
+               X == point.X &&
+               Y == point.Y;
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(X, Y);
+    }
 }
