@@ -1,8 +1,6 @@
 ﻿using Spectre.Console;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Helpers.Structure
@@ -14,6 +12,10 @@ namespace Helpers.Structure
         private const int NotImplementedTime = -1;
 
         private const int ExceptionTime = -2;
+
+        private const string ExceptionText = "Exception";
+
+        private const string NotImplementedText = "Not Implemented";
 
         public Solver(ProblemBase problem)
         {
@@ -30,7 +32,7 @@ namespace Helpers.Structure
 
                 stopwatch.Start();
 
-                long readInputTime;
+                ResultInfo readInput;
 
                 AnsiConsole.MarkupLine("[green]Reading input...[/]");
 
@@ -40,65 +42,99 @@ namespace Helpers.Structure
 
                     stopwatch.Stop();
 
-                    readInputTime = stopwatch.ElapsedMilliseconds;
+                    readInput = new ResultInfo
+                    {
+                        ElapsedMs = stopwatch.ElapsedMilliseconds,
+                        Result = "Success"
+                    };
                 }
                 catch (Exception ex)
                 {
                     LogException(ex);
-                    readInputTime = ExceptionTime;
+                    readInput = new ResultInfo
+                    {
+                        ElapsedMs = ExceptionTime,
+                        Result = "Exception"
+                    };
                 }
 
                 AnsiConsole.MarkupLine("[green]Running Part One...[/]");
 
                 stopwatch.Restart();
 
-                long partOneTime;
+                ResultInfo partOne;
 
                 try
                 {
-                    await problem.SolvePartOne();
+                    var partOneResult = await problem.SolvePartOne();
 
                     stopwatch.Stop();
 
-                    partOneTime = stopwatch.ElapsedMilliseconds;
+                    partOne = new ResultInfo
+                    {
+                        ElapsedMs = stopwatch.ElapsedMilliseconds,
+                        Result = partOneResult
+                    };
                 }
                 catch (NotImplementedException)
                 {
                     AnsiConsole.MarkupLine("[bold yellow]Part One Not Implemented.[/]");
-                    partOneTime = NotImplementedTime;
+
+                    partOne = new ResultInfo
+                    {
+                        ElapsedMs = NotImplementedTime,
+                        Result = "Not Implemented"
+                    };
                 }
                 catch (Exception ex)
                 {
                     LogException(ex);
-                    partOneTime = ExceptionTime;
+
+                    partOne = new ResultInfo
+                    {
+                        ElapsedMs = ExceptionTime,
+                        Result = "Exception"
+                    };
                 }
 
                 AnsiConsole.MarkupLine("[green]Running Part Two...[/]");
 
                 stopwatch.Restart();
 
-                long partTwoTime;
+                ResultInfo partTwo;
 
                 try
                 {
-                    await problem.SolvePartTwo();
+                    var partTwoResult = await problem.SolvePartTwo();
 
                     stopwatch.Stop();
 
-                    partTwoTime = stopwatch.ElapsedMilliseconds;
+                    partTwo = new ResultInfo
+                    {
+                        ElapsedMs = stopwatch.ElapsedMilliseconds,
+                        Result = partTwoResult
+                    };
                 }
                 catch (NotImplementedException)
                 {
                     AnsiConsole.MarkupLine("[bold yellow]Part Two Not Implemented.[/]");
-                    partTwoTime = NotImplementedTime;
+                    partTwo = new ResultInfo
+                    {
+                        ElapsedMs = NotImplementedTime,
+                        Result = "Not Implemented"
+                    };
                 }
                 catch (Exception ex)
                 {
                     LogException(ex);
-                    partTwoTime = ExceptionTime;
+                    partTwo = new ResultInfo
+                    {
+                        ElapsedMs = ExceptionTime,
+                        Result = "Exception"
+                    };
                 }
 
-                DisplayResults(readInputTime, partOneTime, partTwoTime);
+                DisplayResults(readInput, partOne, partTwo);
             });               
         }
 
@@ -109,12 +145,34 @@ namespace Helpers.Structure
                                         ExceptionFormats.ShortenMethods | ExceptionFormats.ShowLinks);
         }
 
-        private void DisplayResults(long readInputTime, long partOneTime, long partTwoTime)
+        private void DisplayResults(ResultInfo readInput, ResultInfo partOne, ResultInfo partTwo)
         {
+            AnsiConsole.WriteLine();
+            AnsiConsole.WriteLine();
+
             var table = new Table();
+            table.Title = new TableTitle("Results");
 
             table.AddColumn("Operation");
+            table.AddColumn("Result");
             table.AddColumn("Elapsed Time {ms}");
+
+            string FormatResult(string result, string defaultColor)
+            {
+                var color = defaultColor;
+
+                if (result.Equals(ExceptionText))
+                {
+                    color = "red";
+                }
+
+                if (result.Equals(NotImplementedText))
+                {
+                    color = "yellow";
+                }
+
+                return $"[{color}]{result}[/]";
+            }
 
             string FormatTime(long time)
             {
@@ -131,11 +189,18 @@ namespace Helpers.Structure
                 return $"[green]{time}[/]";
             }
 
-            table.AddRow("Read Input", FormatTime(readInputTime));
-            table.AddRow("Part One", FormatTime(partOneTime));
-            table.AddRow("Part Two", FormatTime(partTwoTime));
+            table.AddRow("Read Input", FormatResult(readInput.Result, "blue") ,FormatTime(readInput.ElapsedMs));
+            table.AddRow("Part One", FormatResult(partOne.Result, "green") ,FormatTime(partOne.ElapsedMs));
+            table.AddRow("Part Two", FormatResult(partTwo.Result, "green"),FormatTime(partTwo.ElapsedMs));
 
             AnsiConsole.Write(table);
+        }
+        
+        struct ResultInfo
+        {
+            public long ElapsedMs;
+
+            public string Result;
         }
     }
 }
