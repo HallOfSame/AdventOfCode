@@ -1,11 +1,18 @@
 ﻿using IntCodeInterpreter;
 using IntCodeInterpreter.Input;
+using System.Text;
 
 var program = await new FileInputParser().ReadOperationsFromFile("PuzzleInput.txt");
 
+// Part 2
+
 var robot = new Robot();
 
-robot.Run(program);
+robot.Run(program, PaintColors.Black);
+
+// Part 2
+robot = new Robot();
+robot.Run(program, PaintColors.White);
 
 class Robot
 {
@@ -94,7 +101,7 @@ class Robot
             Color = PaintColors.Black
         };
 
-        Console.WriteLine($"Moving to ({newX},{newY}).");
+        //Console.WriteLine($"Moving to ({newX},{newY}).");
 
         if (coordinateMap.TryGetValue(tempCoordinate, out var actualCoordinate))
         {
@@ -109,7 +116,8 @@ class Robot
 
     HashSet<Coordinate> paintedCoordinates = new HashSet<Coordinate>();
 
-    public void Run(List<long> program)
+    public void Run(List<long> program,
+                    int startingColor)
     {
         brain = new Interpreter();
 
@@ -121,7 +129,7 @@ class Robot
         {
             X = 0,
             Y = 0,
-            Color = PaintColors.Black
+            Color = startingColor
         };
 
         coordinateMap.Add(currentCoordinate);
@@ -137,7 +145,7 @@ class Robot
             // Handle Output
             if (outputIsColor)
             {
-                Console.WriteLine($"Do paint");
+                //Console.WriteLine($"Do paint");
                 paintedCoordinates.Add(currentCoordinate);
                 currentCoordinate.Color = (int)x;
             }
@@ -160,6 +168,43 @@ class Robot
         });
 
         Console.WriteLine($"Number of coordinates in map: {coordinateMap.Count}. Number painted is: {paintedCoordinates.Count}.");
+
+        // Figure out the area size
+        var minX = coordinateMap.Min(x => x.X);
+        var maxX = coordinateMap.Max(x => x.X);
+        var minY = coordinateMap.Min(x => x.Y);
+        var maxY = coordinateMap.Max(x => x.Y);
+
+        var stringBuilder = new StringBuilder();
+        stringBuilder.AppendLine();
+
+        void DrawBorder()
+        {
+            stringBuilder.AppendLine(new string(Enumerable.Repeat('-', maxY - minY).ToArray()));
+        }
+
+        DrawBorder();
+
+        for(var x = minX; x <= maxX; x++)
+        {
+            for(var y = minY; y <= maxY; y++)
+            {
+                var color = GetColorForCoordinate(new Coordinate
+                {
+                    X = x,
+                    Y = y
+                });
+
+                stringBuilder.Append(color == PaintColors.White ? '#' : '.');
+            }
+
+            stringBuilder.Append(Environment.NewLine);
+        }
+
+        DrawBorder();
+        stringBuilder.AppendLine();
+
+        Console.WriteLine(stringBuilder.ToString());
     }
 }
 
