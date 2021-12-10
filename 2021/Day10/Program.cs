@@ -9,6 +9,8 @@ class Day10Problem : ProblemBase
 {
     List<char[]> puzzleInput;
 
+    List<char[]> incompleteLines;
+
     public override async Task ReadInput()
     {
         puzzleInput = await new CharArrayFileReader().ReadInputFromFile();
@@ -18,7 +20,17 @@ class Day10Problem : ProblemBase
     {
         var validator = new LineValidator();
 
-        var result = puzzleInput.Select(x => validator.GetLineSyntaxScore(x))
+        var scoredLines = puzzleInput.Select(x => new {
+            Score = validator.GetLineSyntaxScore(x),
+            Line = x
+        });
+
+        incompleteLines = scoredLines.Where(x => x.Score == 0)
+            .Select(x => x.Line)
+            .ToList();
+
+        var result = scoredLines.Where(x => x.Score > 0)
+            .Select(x => x.Score)
             .Sum()
             .ToString();
 
@@ -27,7 +39,14 @@ class Day10Problem : ProblemBase
 
     protected override Task<string> SolvePartTwoInternal()
     {
-        throw new NotImplementedException();
+        var validator = new LineValidator();
+
+        var completionScores = incompleteLines.Select(x => validator.GetLineCompletionScore(x))
+            .OrderBy(x => x).ToArray();
+
+        var middleIndex = completionScores[completionScores.Length / 2];
+
+        return Task.FromResult(middleIndex.ToString());
     }
 }
 
@@ -55,6 +74,69 @@ class LineValidator
         }
 
         throw new InvalidOperationException($"No score exists for invalid character: {firstInvalid}.");
+    }
+
+    public long GetLineCompletionScore(char[] line)
+    {
+        var completionString = GetCompletionForLine(line);
+
+        var completionScore = 0l;
+
+        foreach(var completionChar in completionString)
+        {
+            completionScore *= 5;
+
+            switch(completionChar)
+            {
+                case ')':
+                    completionScore += 1;
+                    break;
+                case '}':
+                    completionScore += 3;
+                    break;
+                case ']':
+                    completionScore += 2;
+                    break;
+                case '>':
+                    completionScore += 4;
+                    break;
+            }
+        }
+
+        return completionScore;
+    }
+
+    private char[] GetCompletionForLine(char[] line)
+    {
+        var runningStack = new Stack<char>();
+
+        foreach (var nextCharacterInLine in line)
+        {
+            if (nextCharacterInLine.IsStartCharacter())
+            {
+                runningStack.Push(nextCharacterInLine);
+            }
+            else
+            {
+                var chunkOpenChar = runningStack.Pop();
+
+                var expectedEndChar = chunkOpenChar.GetEndChar();
+
+                if (nextCharacterInLine != expectedEndChar)
+                {
+                    throw new InvalidOperationException($"Line {line} is corrupted.");
+                }
+            }
+        }
+
+        var completionString = new List<char>(runningStack.Count);
+
+        while(runningStack.Count > 0)
+        {
+            completionString.Add(runningStack.Pop().GetEndChar());
+        }
+
+        return completionString.ToArray();
     }
 
     private char? GetFirstInvalidLineChar(char[] line)
