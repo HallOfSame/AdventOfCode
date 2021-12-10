@@ -185,9 +185,9 @@ class Robot
 
         DrawBorder();
 
-        for(var x = minX; x <= maxX; x++)
+        for(var y = maxY; y >= minY; y--)
         {
-            for(var y = minY; y <= maxY; y++)
+            for(var x = minX; x <= maxX; x++)
             {
                 var color = GetColorForCoordinate(new Coordinate
                 {
