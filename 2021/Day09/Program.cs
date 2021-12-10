@@ -1,12 +1,4 @@
-﻿/*
- * 2199943210
-3987894921
-9856789892
-8767896789
-9899965678
-*/
-
-using Helpers;
+﻿using Helpers;
 using Helpers.Structure;
 using System.Text;
 
@@ -110,12 +102,12 @@ class Map
         var x = currentPoint.X;
         var y = currentPoint.Y;
 
-        switch(direction)
+        switch (direction)
         {
             case Direction.Up:
                 y -= 1;
                 break;
-                case Direction.Down:
+            case Direction.Down:
                 y += 1;
                 break;
             case Direction.Left:
