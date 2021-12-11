@@ -3,6 +3,8 @@ using Helpers.Extensions;
 using Helpers.Maps;
 using Helpers.Structure;
 
+using Spectre.Console;
+
 var solver = new Solver(new Day11Problem());
 
 await solver.Solve();
@@ -29,9 +31,14 @@ class Day11Problem : ProblemBase
         return Task.FromResult(numberOfFlashes.ToString());
     }
 
-    protected override Task<string> SolvePartTwoInternal()
+    protected override async Task<string> SolvePartTwoInternal()
     {
-        throw new NotImplementedException();
+        // Re-read, since the turn might have been before step 100
+        await ReadInput();
+
+        var syncTurn = cave.CalculateSyncTurn();
+
+        return syncTurn.ToString();
     }
 }
 
@@ -104,15 +111,37 @@ class Cave
         {
             //CaveMap.Draw(x => x.EnergyLevel.ToString());
 
-            totalFlashes += RunTurn();
+            totalFlashes += RunTurn(out _);
         }
 
         return totalFlashes;
     }
 
+    public int CalculateSyncTurn()
+    {
+        var turn = 0;
+
+        while (true)
+        {
+            turn++;
+
+            RunTurn(out var isSync);
+
+            if (isSync)
+            {
+                return turn;
+            }
+
+            if (turn % 100 == 0)
+            {
+                AnsiConsole.MarkupLine($"[blue]Passing turn {turn}[/].");
+            }
+        }
+    }
+
     private const int FlashLevel = 9;
 
-    private int RunTurn()
+    private int RunTurn(out bool sync)
     {
         var flashedThisTurn = new HashSet<Octopus>();
 
@@ -143,6 +172,8 @@ class Cave
 
         flashedThisTurn.ToList()
                        .ForEach(x => x.EnergyLevel = 0);
+
+        sync = flashedThisTurn.Count == AllOctopus.Length;
 
         return flashedThisTurn.Count;
     }
