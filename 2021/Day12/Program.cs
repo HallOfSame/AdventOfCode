@@ -1,6 +1,4 @@
-﻿using System.Text;
-
-using Helpers.FileReaders;
+﻿using Helpers.FileReaders;
 using Helpers.Structure;
 
 var solver = new Solver(new Day12Problem());
@@ -18,19 +16,17 @@ class Day12Problem : ProblemBase
         var starterPath = new Path
                           {
                               Current = startNode,
-                              VisitCount = new Dictionary<Node, int>
-                                           {
-                                               {
-                                                   startNode, 1
-                                               }
-                                           },
+                              VisitedNodes = new HashSet<Node>
+                                             {
+                                                 startNode
+                                             },
                               Start = startNode
                           };
 
-        var allPaths = FindPathToEnd(starterPath,
-                                     false);
+        var allPaths = CountPossiblePathsToEnd(starterPath,
+                                               false);
 
-        return Task.FromResult(allPaths.Count.ToString());
+        return Task.FromResult(allPaths.ToString());
     }
 
     protected override Task<string> SolvePartTwoInternal()
@@ -40,42 +36,37 @@ class Day12Problem : ProblemBase
         var starterPath = new Path
                           {
                               Current = startNode,
-                              VisitCount = new Dictionary<Node, int>
-                                           {
-                                               {
-                                                   startNode, 1
-                                               }
-                                           },
+                              VisitedNodes = new HashSet<Node>
+                              {
+                                  startNode
+                              },
                               Start = startNode
                           };
 
-        var allPaths = FindPathToEnd(starterPath,
-                                     true);
+        var allPaths = CountPossiblePathsToEnd(starterPath,
+                                               true);
 
-        return Task.FromResult(allPaths.Count.ToString());
+        return Task.FromResult(allPaths.ToString());
     }
 
-    private List<Path> FindPathToEnd(Path currentPath,
-                                     bool allowDoubleVisitOfOneSmallCave)
+    private int CountPossiblePathsToEnd(Path currentPath,
+                                        bool allowDoubleVisitOfOneSmallCave)
     {
         if (currentPath.IsComplete)
         {
-            return new List<Path>
-                   {
-                       currentPath
-                   };
+            return 1;
         }
 
-        var resultPaths = new List<Path>();
+        var resultPaths = 0;
 
         foreach (var neighbor in currentPath.Current.Edges)
         {
             var otherNode = neighbor.GetOther(currentPath.Current);
 
-            if (currentPath.VisitCount.TryGetValue(otherNode,
-                                                   out var otherNodeVisitCount)
-                && otherNode.IsSmall
-                && otherNodeVisitCount > 0)
+            var markAsDoubleVisit = false;
+
+            if (otherNode.IsSmall
+                && currentPath.VisitedNodes.Contains(otherNode))
             {
                 if (!allowDoubleVisitOfOneSmallCave)
                 {
@@ -89,26 +80,23 @@ class Day12Problem : ProblemBase
                 {
                     continue;
                 }
+
+                markAsDoubleVisit = true;
             }
 
             // Add this node
             var newPath = currentPath.Clone();
 
             newPath.Current = otherNode;
+            newPath.HasVisitedSmallCaveTwice = newPath.HasVisitedSmallCaveTwice || markAsDoubleVisit;
 
-            if (newPath.VisitCount.ContainsKey(otherNode))
+            if (otherNode.IsSmall)
             {
-                newPath.VisitCount[otherNode] += 1;
-            }
-            else
-            {
-                newPath.VisitCount[otherNode] = 1;
+                newPath.VisitedNodes.Add(otherNode);
             }
 
-            newPath.Edges.Add(neighbor);
-
-            resultPaths.AddRange(FindPathToEnd(newPath,
-                                               allowDoubleVisitOfOneSmallCave));
+            resultPaths += CountPossiblePathsToEnd(newPath,
+                                                   allowDoubleVisitOfOneSmallCave);
         }
 
         return resultPaths;
@@ -131,10 +119,7 @@ class Day12Problem : ProblemBase
             if (!nodes.TryGetValue(nodeOneId,
                                    out var nodeOne))
             {
-                nodeOne = new Node
-                          {
-                              Id = nodeOneId
-                          };
+                nodeOne = new Node(nodeOneId);
 
                 nodes[nodeOneId] = nodeOne;
             }
@@ -144,10 +129,7 @@ class Day12Problem : ProblemBase
             if (!nodes.TryGetValue(nodeTwoId,
                                    out var nodeTwo))
             {
-                nodeTwo = new Node
-                          {
-                              Id = nodeTwoId
-                          };
+                nodeTwo = new Node(nodeTwoId);
 
                 nodes[nodeTwoId] = nodeTwo;
             }
@@ -181,26 +163,25 @@ class Map
 
 class Node
 {
+    public Node(string id)
+    {
+        Id = id;
+        IsSmall = Id.All(char.IsLower);
+        IsStart = Id.Equals(StartCaveId);
+        IsEnd = Id.Equals(EndCaveId);
+    }
+
     public const string StartCaveId = "start";
 
     public const string EndCaveId = "end";
 
-    public string Id
-    {
-        get; init;
-    }
+    public string Id { get; init; }
 
-    public bool IsSmall
-    {
-        get
-        {
-            return Id.All(char.IsLower);
-        }
-    }
+    public bool IsSmall { get; }
 
-    public bool IsStart => Id.Equals(StartCaveId);
+    public bool IsStart { get; }
 
-    public bool IsEnd => Id.Equals(EndCaveId);
+    public bool IsEnd { get; }
 
     public List<Edge> Edges { get; } = new();
 
@@ -211,21 +192,10 @@ class Node
 
     public override bool Equals(object? obj)
     {
-        if (ReferenceEquals(null,
-                            obj))
-        {
-            return false;
-        }
-
         if (ReferenceEquals(this,
                             obj))
         {
             return true;
-        }
-
-        if (obj.GetType() != this.GetType())
-        {
-            return false;
         }
 
         return Equals((Node)obj);
@@ -261,48 +231,21 @@ class Path
 
     public bool IsComplete => Start.IsStart && Current.IsEnd;
 
-    public Dictionary<Node, int> VisitCount { get; init; } = new();
+    public HashSet<Node> VisitedNodes { get; init; } = new();
 
-    public List<Edge> Edges { get; init; } = new();
-
-    public bool HasVisitedSmallCaveTwice
-    {
-        get
-        {
-            return VisitCount.Any(x => x.Key.IsSmall && x.Value > 1);
-        }
-    }
-
-    public override string ToString()
-    {
-        var stringBuilder = new StringBuilder();
-
-        var current = Start;
-
-        stringBuilder.Append(current.Id);
-
-        foreach (var edge in Edges)
-        {
-            var other = edge.GetOther(current);
-
-            current = other;
-
-            stringBuilder.Append($",{other.Id}");
-        }
-
-        return stringBuilder.ToString();
-    }
+    public bool HasVisitedSmallCaveTwice { get; set; }
 
     public Path Clone()
     {
-        return new Path
-               {
-                   Start = this.Start,
-                   Current = this.Current,
-                   VisitCount = VisitCount.ToDictionary(x => x.Key,
-                                                        x => x.Value),
-                   Edges = Edges.ToList()
-               };
+        var clone = new Path
+                    {
+                        Start = this.Start,
+                        Current = this.Current,
+                        VisitedNodes = this.VisitedNodes.ToHashSet(),
+                        HasVisitedSmallCaveTwice = this.HasVisitedSmallCaveTwice
+                    };
+
+        return clone;
     }
 }
 
