@@ -8,22 +8,131 @@ var moonPairs = moons.SelectMany((_,
                                   moonTwo) => (moonOne, moonTwo))
                      .ToList();
 
-var numberOfSteps = 1000;
+var targetStep = 10;
 
-for (var currentStep = 1; currentStep <= numberOfSteps; currentStep++)
+var repeatedXStep = default(int?);
+var repeatedYStep = default(int?);
+var repeatedZStep = default(int?);
+
+var totalEnergy = 0;
+
+var currentStep = 0;
+
+// Using a string to easily track the state
+// Since X Y and Z are independent, we can check how often a single one would repeat first
+// This is a lot lower amount of steps to process
+var xPostions = new HashSet<string>
+                {
+                    string.Join(string.Empty,
+                                moons.Select(x => x.CurrentPosition.X).Concat(moons.Select(x => x.CurrentVelocity.X)))
+                };
+
+var yPostions = new HashSet<string>
+                {
+                    string.Join(string.Empty,
+                                moons.Select(x => x.CurrentPosition.Y).Concat(moons.Select(x => x.CurrentVelocity.Y)))
+                };
+var zPostions = new HashSet<string>
+                {
+                    string.Join(string.Empty,
+                                moons.Select(x => x.CurrentPosition.Z).Concat(moons.Select(x => x.CurrentVelocity.Z)))
+                };
+
+while (true)
 {
-    foreach (var pair in moonPairs)
+    currentStep++;
+
+    foreach (var (moonOne, moonTwo) in moonPairs)
     {
-        Moon.ApplyGravity(pair.moonOne, pair.moonTwo);
+        Moon.ApplyGravity(moonOne, moonTwo);
     }
 
     moons.ForEach(x => x.ApplyVelocity());
+
+    if (currentStep == targetStep)
+    {
+        // Assuming this will take less time than part 2
+        totalEnergy = moons.Select(x => x.GetTotalEnergy())
+                           .Sum();
+    }
+
+    if (!repeatedXStep.HasValue)
+    {
+        var currentXPosition = string.Join(string.Empty,
+                                           moons.Select(x => x.CurrentPosition.X)
+                                                .Concat(moons.Select(x => x.CurrentVelocity.X)));
+
+        if (xPostions.Contains(currentXPosition))
+        {
+            repeatedXStep = currentStep;
+        }
+        else
+        {
+            xPostions.Add(currentXPosition);
+        }
+    }
+
+    if (!repeatedYStep.HasValue)
+    {
+        var currentYPosition = string.Join(string.Empty,
+                                           moons.Select(x => x.CurrentPosition.Y)
+                                                .Concat(moons.Select(x => x.CurrentVelocity.Y)));
+
+        if (yPostions.Contains(currentYPosition))
+        {
+            repeatedYStep = currentStep;
+        }
+        else
+        {
+            yPostions.Add(currentYPosition);
+        }
+    }
+
+    if (!repeatedZStep.HasValue)
+    {
+        var currentZPosition = string.Join(string.Empty,
+                                           moons.Select(x => x.CurrentPosition.Z)
+                                                .Concat(moons.Select(x => x.CurrentVelocity.Z)));
+
+        if (zPostions.Contains(currentZPosition))
+        {
+            repeatedZStep = currentStep;
+        }
+        else
+        {
+            zPostions.Add(currentZPosition);
+        }
+    }
+
+    if (repeatedXStep.HasValue
+        && repeatedYStep.HasValue
+        && repeatedZStep.HasValue)
+    {
+        break;
+    }
 }
 
-var totalEnergy = moons.Select(x => x.GetTotalEnergy())
-                       .Sum();
+Console.WriteLine($"Total energy after {targetStep} steps: {totalEnergy}.");
 
-Console.WriteLine($"Total energy after {numberOfSteps} steps: {totalEnergy}.");
+// Then just find the first number that the three repeats would coincide
+Console.WriteLine($"Repeated position step: {LCM(repeatedXStep.Value, LCM(repeatedYStep.Value, repeatedZStep.Value))}");
+
+// Thanks S/O for these methods for like the 10th time over all the AOC puzzles I've done
+static long GCF(long a, long b)
+{
+    while (b != 0)
+    {
+        var temp = b;
+        b = a % b;
+        a = temp;
+    }
+    return a;
+}
+
+static long LCM(long a, long b)
+{
+    return (a / GCF(a, b)) * b;
+}
 
 class MoonFileReader : FileReader<Moon>
 {
