@@ -2,6 +2,8 @@
 using Helpers.Maps;
 using Helpers.Structure;
 
+using Spectre.Console;
+
 var solver = new Solver(new Day13Problem());
 
 await solver.Solve();
@@ -47,9 +49,31 @@ class Day13Problem : ProblemBase
         }
     }
 
-    protected override async Task<string> SolvePartTwoInternal()
+    protected override Task<string> SolvePartTwoInternal()
     {
-        throw new NotImplementedException();
+        folds.Skip(1)
+             .ToList()
+             .ForEach(ProcessFold);
+
+        var maxX = dotLocations.Max(x => x.X);
+        var maxY = dotLocations.Max(x => x.Y);
+
+        var canvas = new Canvas(maxX + 1,
+                                maxY + 1);
+
+        dotLocations.ToList()
+                    .ForEach(x => canvas.SetPixel(x.X,
+                                                  x.Y,
+                                                  Color.Aqua));
+
+        var panel = new Panel(canvas)
+                    {
+                        Header = new PanelHeader("Part Two Answer")
+                    };
+
+        AnsiConsole.Write(panel);
+
+        return Task.FromResult("See above picture.");
     }
 
     public override async Task ReadInput()
