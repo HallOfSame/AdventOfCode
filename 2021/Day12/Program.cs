@@ -13,10 +13,12 @@ class Day12Problem : ProblemBase
     {
         var startNode = map.Nodes.First(x => x.IsStart);
 
+        var smallNodeCount = map.Nodes.Count(x => x.IsSmall);
+
         var starterPath = new Path
                           {
                               Current = startNode,
-                              VisitedNodes = new HashSet<Node>
+                              VisitedNodes = new HashSet<Node>(smallNodeCount)
                                              {
                                                  startNode
                                              },
@@ -33,10 +35,12 @@ class Day12Problem : ProblemBase
     {
         var startNode = map.Nodes.First(x => x.IsStart);
 
+        var smallNodeCount = map.Nodes.Count(x => x.IsSmall);
+
         var starterPath = new Path
                           {
                               Current = startNode,
-                              VisitedNodes = new HashSet<Node>
+                              VisitedNodes = new HashSet<Node>(smallNodeCount)
                               {
                                   startNode
                               },
@@ -241,7 +245,9 @@ class Path
                     {
                         Start = this.Start,
                         Current = this.Current,
-                        VisitedNodes = this.VisitedNodes.ToHashSet(),
+                        // From the reference source, this causes special HashSet copying logic to run
+                        VisitedNodes = new HashSet<Node>(this.VisitedNodes,
+                                                         this.VisitedNodes.Comparer),
                         HasVisitedSmallCaveTwice = this.HasVisitedSmallCaveTwice
                     };
 
