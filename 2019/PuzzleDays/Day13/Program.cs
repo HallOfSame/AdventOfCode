@@ -1,4 +1,6 @@
-﻿using IntCodeInterpreter;
+﻿using System.Text;
+
+using IntCodeInterpreter;
 using IntCodeInterpreter.Input;
 
 var gameCode = await new FileInputParser().ReadOperationsFromFile("PuzzleInput.txt");
@@ -13,11 +15,14 @@ class ArcadeGame
 
     private Interpreter interpreter;
 
+    private long score;
+
     public ArcadeGame(List<long> gameCode)
     {
+        gameCode[0] = 2; // 2 Quarters to run the game, set to 0 for part 1
         this.gameCode = gameCode;
         interpreter = new Interpreter();
-        gameMap = new HashSet<GameTile>();
+        gameMap = new Dictionary<Coordinate, GameTile>();
     }
 
     public void Run()
@@ -27,7 +32,34 @@ class ArcadeGame
         interpreter.ProcessOperations(gameCode,
                                       () =>
                                       {
-                                          throw new NotImplementedException("Input not implemented.");
+                                          DrawScreen();
+
+                                          //Thread.Sleep(200);
+
+                                          return ballTile.Position.X.CompareTo(paddleTile.Position.X);
+
+                                          /*
+                                           Comment out to actually play, but that's way too hard at the terrible FPS
+                                          var input = Console.ReadKey();
+
+                                          if (input.Key == ConsoleKey.LeftArrow)
+                                          {
+                                              return -1;
+                                          }
+
+                                          if (input.Key == ConsoleKey.DownArrow)
+                                          {
+                                              return 0;
+                                          }
+
+                                          if (input.Key == ConsoleKey.RightArrow)
+                                          {
+                                              return 1;
+                                          }
+
+                                          // Default to not moved
+                                          return 0;
+                                          */
                                       },
                                       (outputValue) =>
                                       {
@@ -40,7 +72,71 @@ class ArcadeGame
                                           }
                                       });
 
-        Console.WriteLine($"Number of block tiles: {gameMap.Count(x => x.Type == TileType.Block)}.");
+        Console.WriteLine($"Number of block tiles: {gameMap.Count(x => x.Value.Type == TileType.Block)}.");
+
+        Console.WriteLine($"Score: {score}.");
+    }
+
+    private GameTile ballTile;
+
+    private GameTile paddleTile;
+
+    private void DrawScreen()
+    {
+        var minX = gameMap.Min(x => x.Key.X);
+        var maxX = gameMap.Max(x => x.Key.X);
+        var minY = gameMap.Min(y => y.Key.Y);
+        var maxY = gameMap.Max(y => y.Key.Y);
+
+        var stringBuilder = new StringBuilder();
+        stringBuilder.AppendLine();
+
+        void DrawBorder()
+        {
+            stringBuilder.AppendLine(new string(Enumerable.Repeat('-', maxX - minX).ToArray()));
+        }
+
+        DrawBorder();
+
+        for (var y = maxY; y >= minY; y--)
+        {
+            for (var x = minX; x <= maxX; x++)
+            {
+                var coordinate = new Coordinate
+                                 {
+                                     X = x,
+                                     Y = y
+                                 };
+
+                if (gameMap.TryGetValue(coordinate,
+                                        out var tile))
+                {
+
+                    var character = tile.Type switch
+                    {
+                        TileType.Block => '#',
+                        TileType.Wall => '&',
+                        TileType.Paddle => '=',
+                        TileType.Ball => 'O',
+                        TileType.Empty => ' ',
+                        _ => throw new ArgumentOutOfRangeException(nameof(tile.Type))
+                    };
+
+                    stringBuilder.Append(character);
+                }
+                else
+                {
+                    stringBuilder.Append(' ');
+                }
+            }
+
+            stringBuilder.Append(Environment.NewLine);
+        }
+
+        DrawBorder();
+        stringBuilder.AppendLine();
+
+        Console.WriteLine(stringBuilder.ToString());
     }
 
     private void ProcessOutput(List<long> outputData)
@@ -51,21 +147,33 @@ class ArcadeGame
                              Y = (int)outputData[1]
                          };
 
+        if (coordinate.X == -1
+            && coordinate.Y == 0)
+        {
+            score = outputData[2];
+            return;
+        }
+
         var tile = new GameTile
                    {
                        Position = coordinate,
                        Type = (TileType)(int)outputData[2]
                    };
 
-        if (gameMap.Contains(tile))
+        if (tile.Type == TileType.Ball)
         {
-            throw new NotImplementedException("Updating existing tile not implemented.");
+            ballTile = tile;
         }
 
-        gameMap.Add(tile);
+        if (tile.Type == TileType.Paddle)
+        {
+            paddleTile = tile;
+        }
+
+        gameMap[coordinate] = tile;
     }
 
-    private HashSet<GameTile> gameMap;
+    private Dictionary<Coordinate, GameTile> gameMap;
 }
 
 class GameTile
