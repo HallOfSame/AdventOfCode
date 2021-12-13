@@ -4,21 +4,33 @@ var reactions = await new ReactionReader().ReadInputFromFile();
 
 // Part 1
 
-var oreRequired = new ReactionVessel().GetOreRequiredForSingleOutput("FUEL",
-                                                      reactions);
+var oreRequired = new ReactionVessel
+                  {
+                      IncludeDebugOutput = false
+                  }.GetOreRequiredForSingleOutput("FUEL",
+                                                  reactions);
 
 Console.WriteLine($"Ore required for 1 fuel: {oreRequired}.");
+
+// Part 2
+
+var fuelPossible = new ReactionVessel
+                   {
+                       IncludeDebugOutput = false
+                   }.DetermineAmountOfFuelPossible(reactions);
+
+Console.WriteLine($"Possible fuel we can create: {fuelPossible}.");
 
 class ReactionVessel
 {
     public const string Ore = "ORE";
 
     private Dictionary<string, long> stockpile = new()
-                                                {
-                                                    {
-                                                        Ore, long.MaxValue
-                                                    }
-                                                };
+                                                 {
+                                                     {
+                                                         Ore, 1000000000000L
+                                                     }
+                                                 };
 
     private long GenerateOutput(string symbol,
                                 long amount,
@@ -38,9 +50,15 @@ class ReactionVessel
 
             if (input.Symbol == Ore)
             {
-                Console.WriteLine($"Using {amountNeeded} ORE to generate {amount} of {symbol}.");
+                if (stockpile[Ore] < amountNeeded)
+                {
+                    throw new ApplicationException("Out of ORE");
+                }
+
+                WriteMessage($"Using {amountNeeded} ORE to generate {amount} of {symbol}.");
 
                 oreUsedThisTransaction += amountNeeded;
+                stockpile[Ore] -= oreUsedThisTransaction;
                 continue;
             }
 
@@ -49,14 +67,14 @@ class ReactionVessel
             {
                 if (amountNeeded < existingAmount)
                 {
-                    Console.WriteLine($"Stockpile covered required {amountNeeded} for {symbol}.");
+                    WriteMessage($"Stockpile covered required {amountNeeded} for {symbol}.");
 
                     amountNeeded = 0;
                     stockpile[input.Symbol] -= input.Amount;
                 }
                 else
                 {
-                    Console.WriteLine($"Emptied stockpile of {input.Symbol} while generating {symbol}.");
+                    WriteMessage($"Emptied stockpile of {input.Symbol} while generating {symbol}.");
 
                     stockpile[input.Symbol] = 0;
                     amountNeeded -= existingAmount;
@@ -65,7 +83,7 @@ class ReactionVessel
 
             if (amountNeeded > 0)
             {
-                Console.WriteLine($"Still need {amountNeeded} of {input.Symbol} as part of producing {amount} {symbol}.");
+                WriteMessage($"Still need {amountNeeded} of {input.Symbol} as part of producing {amount} {symbol}.");
 
                 oreUsedThisTransaction += GenerateOutput(input.Symbol,
                                                          amountNeeded,
@@ -77,13 +95,13 @@ class ReactionVessel
         {
             if (stockpile.ContainsKey(symbol))
             {
-                Console.WriteLine($"Adding an additional {leftoverAmount} of {symbol} to the stockpile.");
+                WriteMessage($"Adding an additional {leftoverAmount} of {symbol} to the stockpile.");
 
                 stockpile[symbol] += leftoverAmount;
             }
             else
             {
-                Console.WriteLine($"Adding an new quantity {leftoverAmount} of {symbol} to the stockpile.");
+                WriteMessage($"Adding an new quantity {leftoverAmount} of {symbol} to the stockpile.");
 
                 stockpile[symbol] = leftoverAmount;
             }
@@ -92,12 +110,65 @@ class ReactionVessel
         return oreUsedThisTransaction;
     }
 
+    public bool IncludeDebugOutput { get; set; }
+
+    private void WriteMessage(string message)
+    {
+        if (!IncludeDebugOutput)
+        {
+            return;
+        }
+
+        Console.WriteLine(message);
+    }
+
     public long GetOreRequiredForSingleOutput(string outputSymbol,
                                               List<Intermediate> reactions)
     {
         return GenerateOutput(outputSymbol,
                               1,
                               reactions);
+    }
+
+    public long DetermineAmountOfFuelPossible(List<Intermediate> reactions)
+    {
+        var fuelGenerated = 0L;
+
+        var fuelFactor = 10_000_000; // Arbitrary start at 10 Mil. Ran fast enough for me.
+
+        Dictionary<string, long> savedStockpile = null;
+
+        while (true)
+        {
+            try
+            {
+                // We need to be able to roll back if this fails, so copy our current stockpile
+                savedStockpile = stockpile.ToDictionary(x => x.Key,
+                                                        x => x.Value);
+
+                GenerateOutput("FUEL",
+                               fuelFactor,
+                               reactions);
+
+                fuelGenerated += fuelFactor;
+            }
+            catch (ApplicationException) // Thrown if we run out of over
+            {
+                // Reset the stockpile to before we tried to over-gen fuel
+                stockpile = savedStockpile!;
+
+                // If we were only creating a single unit, we're done here
+                if (fuelFactor == 1)
+                {
+                    break;
+                }
+
+                // Otherwise back down the factor by half and keep running
+                fuelFactor /= 2;
+            }
+        }
+
+        return fuelGenerated;
     }
 }
 
