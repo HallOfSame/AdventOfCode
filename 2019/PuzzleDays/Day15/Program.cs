@@ -53,7 +53,7 @@ class RobotManager
 
                                               var nextInput = GetNextInputCommand();
 
-                                              lastMove = (Direction)nextInput;
+                                              lastInput = (Direction)nextInput;
 
                                               return nextInput;
                                           },
@@ -71,9 +71,81 @@ class RobotManager
         }
 
         DrawCurrentMap("Program End");
+
+        var distance = CalculateDistanceFromOriginToO2();
+
+        AnsiConsole.MarkupLine($"[yellow]Distance from origin to O2 System: {distance}.[/]");
     }
 
-    private Direction lastMove;
+    private int CalculateDistanceFromOriginToO2()
+    {
+        // A* search
+
+        // Using manhattan distance to estimate the remaining distance to the end
+        int ManhattanDistanceToO2System(Coordinate2D current)
+        {
+            return Math.Abs(current.X - o2Location.X) + Math.Abs(current.Y - o2Location.Y);
+        }
+
+        var start = new Coordinate2D(0, 0);
+
+        var workingSet = new HashSet<Coordinate2D>
+                         {
+                             start
+                         };
+
+        // cameFromMap[x] == the cheapest coordinate to reach it from the start location
+        // Can be used to rebuild the pathway
+        var cameFromMap = new Dictionary<Coordinate2D, Coordinate2D>();
+
+        // gScoreMap[x] == the cost of the cheapest path from start to x
+        var gScoreMap = tileMap.ToDictionary(x => x.Key,
+                                             x => int.MaxValue);
+
+        // fScoreMap[x] == our guess to how far x is from the start, using gScore + a guesstimate
+        var fScoreMap = gScoreMap.ToDictionary(x => x.Key,
+                                               x => x.Value);
+
+        gScoreMap[start] = 0;
+        fScoreMap[start] = ManhattanDistanceToO2System(start);
+
+        while (workingSet.Any())
+        {
+            var current = workingSet.OrderBy(x => fScoreMap[x])
+                                    .First();
+
+            if (Equals(current,
+                       o2Location))
+            {
+                // We reached the O2 system, return the number of moves needed
+                return gScoreMap[current];
+            }
+
+            workingSet.Remove(current);
+
+            foreach (var neighbor in GetNeighborCoordinates(current)
+                         .Where(x => tileMap.ContainsKey(x) && !blockedCoordinates.Contains(x)))
+            {
+                var tentativeGScore = gScoreMap[current] + 1; // Distance from a neighbor is always 1
+
+                // This path is better, so record it
+                if (tentativeGScore < gScoreMap[neighbor])
+                {
+                    // Record current best way to reach neighbor
+                    cameFromMap[neighbor] = current;
+                    // Update the scores
+                    gScoreMap[neighbor] = tentativeGScore;
+                    fScoreMap[neighbor] = tentativeGScore + ManhattanDistanceToO2System(neighbor);
+                    // Ensure neighbor is in the working set again
+                    workingSet.Add(neighbor);
+                }
+            }
+        }
+
+        throw new InvalidOperationException("Path from origin to O2 system could not be located.");
+    }
+
+    private Direction lastInput;
 
     private Coordinate2D currentCoordinate;
 
@@ -113,23 +185,34 @@ class RobotManager
             _ => throw new ArgumentOutOfRangeException()
         };
 
-        var targetCoordinate = GetUpdatedCoordinate(lastMove);
+        var targetCoordinate = GetUpdatedCoordinate(lastInput);
 
         tileMap[targetCoordinate] = tileType;
 
         if (tileType != TileType.Wall)
         {
             currentCoordinate = targetCoordinate;
+
+            if (!backtracking)
+            {
+                moveStack.Push(lastInput);
+            }
+        }
+        else
+        {
+            blockedCoordinates.Add(targetCoordinate);
         }
 
         // Found the O2 System
         if (tileType == TileType.O2System)
         {
-            return true;
+            o2Location = targetCoordinate;
         }
 
         return false;
     }
+
+    private Coordinate2D o2Location;
 
     private void DrawCurrentMap(string title)
     {
@@ -138,18 +221,8 @@ class RobotManager
         var minY = tileMap.Min(x => x.Key.Y);
         var maxY = tileMap.Max(x => x.Key.Y);
 
-        var xAdjust = 0;
-        var yAdjust = 0;
-
-        if (minY < 0)
-        {
-            yAdjust = Math.Abs(minY);
-        }
-
-        if (minX < 0)
-        {
-            xAdjust = Math.Abs(minX);
-        }
+        var xAdjust = minX;
+        var yAdjust = maxY;
 
         var canvas = new Canvas(maxX - minX + 1,
                                 maxY - minY + 1);
@@ -173,14 +246,14 @@ class RobotManager
                             : Color.White;
             }
 
-            canvas.SetPixel(coordinate2D.X + xAdjust,
-                            coordinate2D.Y + yAdjust,
+            canvas.SetPixel(coordinate2D.X - xAdjust,
+                            (coordinate2D.Y - yAdjust) * -1,
                             color);
         }
 
         // Mark the start location
-        canvas.SetPixel(xAdjust,
-                        yAdjust,
+        canvas.SetPixel(0 - xAdjust,
+                        (0 - yAdjust) * -1,
                         Color.Fuchsia);
 
         var panel = new Panel(canvas)
@@ -206,47 +279,43 @@ class RobotManager
                };
     }
 
-    private readonly HashSet<Coordinate2D> deadEndCoordinates = new ();
+    private readonly HashSet<Coordinate2D> visitedCoordinates = new ();
+
+    private readonly HashSet<Coordinate2D> blockedCoordinates = new();
+
+    private readonly Stack<Direction> moveStack = new();
+
+    private bool backtracking = false;
 
     private long GetNextInputCommand()
     {
         var neighborsOfCurrent = GetNeighborCoordinates(currentCoordinate);
 
-        if (neighborsOfCurrent.Select(x => new
-                                           {
-                                               DeadEnd = deadEndCoordinates.Contains(x),
-                                               Type = tileMap.TryGetValue(x,
-                                                                          out var tileType)
-                                                          ? tileType
-                                                          : TileType.Empty
-                                           })
-                              .Count(x => x.Type == TileType.Wall || x.DeadEnd)
-            == 3)
+        var nextCoordinateToTry = neighborsOfCurrent.FirstOrDefault(x => !visitedCoordinates.Contains(x) && !blockedCoordinates.Contains(x));
+
+        if (nextCoordinateToTry == null)
         {
-            deadEndCoordinates.Add(currentCoordinate);
+            if (moveStack.Count == 0)
+            {
+                throw new ApplicationException("Searched entire map!");
+            }
+
+            backtracking = true;
+
+            // Backtrack by pulling off our list of moves
+            return (long)(moveStack.Pop() switch
+                             {
+                                 Direction.North => Direction.South,
+                                 Direction.South => Direction.North,
+                                 Direction.West => Direction.East,
+                                 Direction.East => Direction.West,
+                                 _ => throw new ArgumentOutOfRangeException()
+                             });
         }
 
-        var nextCoordinateToTry = neighborsOfCurrent.OrderBy(x =>
-                                                             {
-                                                                 if (deadEndCoordinates.Contains(x))
-                                                                 {
-                                                                     // Don't go to dead ends
-                                                                     return 99;
-                                                                 }
+        backtracking = false;
 
-                                                                 if (!tileMap.TryGetValue(x,
-                                                                                          out var tileType))
-                                                                 {
-                                                                     // Prefer new locations first
-                                                                     return 0;
-                                                                 }
-
-                                                                 // Otherwise, trying to get back to an empty space we can move around from
-                                                                 return tileType == TileType.Empty
-                                                                            ? 1
-                                                                            : 99;
-                                                             })
-                                                    .First();
+        visitedCoordinates.Add(nextCoordinateToTry);
 
         if (nextCoordinateToTry.X == currentCoordinate.X)
         {
@@ -257,15 +326,13 @@ class RobotManager
 
             return (long)Direction.South;
         }
-        else
-        {
-            if (nextCoordinateToTry.X > currentCoordinate.X)
-            {
-                return (long)Direction.East;
-            }
 
-            return (long)Direction.West;
+        if (nextCoordinateToTry.X > currentCoordinate.X)
+        {
+            return (long)Direction.East;
         }
+
+        return (long)Direction.West;
     }
 }
 
