@@ -75,6 +75,40 @@ class RobotManager
         var distance = CalculateDistanceFromOriginToO2();
 
         AnsiConsole.MarkupLine($"[yellow]Distance from origin to O2 System: {distance}.[/]");
+        AnsiConsole.MarkupLine($"[yellow]Time to refill O2 to area: {CalculateTimeToRefill()}.[/]");
+    }
+
+    private int CalculateTimeToRefill()
+    {
+        // Basically getting the longest distance point from the O2 system
+        // This is more or less an implementation of Dijkstra's alg
+        var distanceToO2 = tileMap.Where(x => !blockedCoordinates.Contains(x.Key))
+                                  .ToDictionary(x => x.Key,
+                                                x => int.MaxValue);
+
+        distanceToO2[o2Location] = 0;
+
+        var notVisited = distanceToO2.Keys.ToHashSet();
+
+        while (notVisited.Any())
+        {
+            var current = notVisited.MinBy(x => distanceToO2[x]);
+
+            notVisited.Remove(current);
+
+            foreach (var neighbor in GetNeighborCoordinates(current)
+                         .Where(x => notVisited.Contains(x)))
+            {
+                var neighborDistance = distanceToO2[current] + 1;
+
+                if (neighborDistance < distanceToO2[neighbor])
+                {
+                    distanceToO2[neighbor] = neighborDistance;
+                }
+            }
+        }
+
+        return distanceToO2.Max(x => x.Value);
     }
 
     private int CalculateDistanceFromOriginToO2()
