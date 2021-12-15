@@ -9,6 +9,8 @@ await solver.Solve();
 
 class Day15Problem : ProblemBase
 {
+    private List<CaveLocation[]> locations;
+
     private Cave cave;
 
     protected override Task<string> SolvePartOneInternal()
@@ -17,14 +19,57 @@ class Day15Problem : ProblemBase
                                    .ToString());
     }
 
-    protected override async Task<string> SolvePartTwoInternal()
+    protected override Task<string> SolvePartTwoInternal()
     {
-        throw new NotImplementedException();
+        var xMod = locations[0].Length;
+        var yMod = locations.Count;
+
+        var locations2d = locations.To2DArray();
+
+        var bigCaveLocations = new CaveLocation[xMod * 5, yMod * 5];
+
+        for (var yTile = 0; yTile < 5; yTile++)
+        {
+            for (var xTile = 0; xTile < 5; xTile++)
+            {
+                // There is probably a better way to do this
+                for (var y = 0; y < yMod; y++)
+                {
+                    for (var x = 0; x < xMod; x++)
+                    {
+                        var originalCoordinate = locations2d[x,
+                                                             y];
+
+                        var updatedRiskLevel = originalCoordinate.RiskLevel + yTile + xTile;
+
+                        if (updatedRiskLevel > 9)
+                        {
+                            updatedRiskLevel -= 9;
+                        }
+
+                        var largerX = (xMod * xTile) + x;
+                        var largerY = (yMod * yTile) + y;
+
+                        bigCaveLocations[largerX,
+                                         largerY] = new CaveLocation(new Coordinate(largerX,
+                                                                                    largerY))
+                                                    {
+                                                        RiskLevel = updatedRiskLevel
+                                                    };
+                    }
+                }
+            }
+        }
+
+        var bigCave = new Cave(bigCaveLocations);
+
+        return Task.FromResult(bigCave.GetShortestPathLength()
+                                      .ToString());
     }
 
     public override async Task ReadInput()
     {
-        var locations = await new LocationReader().ReadInputFromFile();
+        locations = await new LocationReader().ReadInputFromFile();
 
         cave = new Cave(locations.To2DArray());
     }
@@ -63,10 +108,6 @@ class Cave
                              start
                          };
 
-        // cameFromMap[x] == the cheapest coordinate to reach it from the start location
-        // Can be used to rebuild the pathway
-        var cameFromMap = new Dictionary<CaveLocation, CaveLocation>();
-
         // gScoreMap[x] == the cost of the cheapest path from start to x
         var gScoreMap = caveLocations.Cast<CaveLocation>()
                                      .ToDictionary(x => x.Coordinate,
@@ -104,8 +145,6 @@ class Cave
                 // This path is better, so record it
                 if (tentativeGScore < gScoreMap[neighbor])
                 {
-                    // Record current best way to reach neighbor
-                    cameFromMap[neighborLocation] = current;
                     // Update the scores
                     gScoreMap[neighbor] = tentativeGScore;
                     fScoreMap[neighbor] = tentativeGScore + ManhattanDistanceToEnd(neighbor);
