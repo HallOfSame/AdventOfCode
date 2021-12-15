@@ -95,66 +95,51 @@ class Cave
         var endLocation = caveLocations[height - 1,
                                         width - 1];
 
-        int ManhattanDistanceToEnd(Coordinate current)
+        // This is more or less an implementation of Dijkstra's alg
+        var distanceToGoal = caveLocations.Cast<CaveLocation>()
+                                          .ToDictionary(x => x,
+                                                        x => int.MaxValue);
+
+        distanceToGoal[endLocation] = endLocation.RiskLevel;
+
+        var notVisited = new PriorityQueue<CaveLocation, int>(distanceToGoal.Count);
+
+        notVisited.Enqueue(endLocation,
+                           endLocation.RiskLevel);
+
+        while (notVisited.Count != 0)
         {
-            return Math.Abs(current.X - endLocation.Coordinate.X) + Math.Abs(current.Y - endLocation.Coordinate.Y);
-        }
+            var current = notVisited.Dequeue();
 
-        var start = caveLocations[0,
-                                  0];
-
-        var workingSet = new HashSet<CaveLocation>
-                         {
-                             start
-                         };
-
-        // gScoreMap[x] == the cost of the cheapest path from start to x
-        var gScoreMap = caveLocations.Cast<CaveLocation>()
-                                     .ToDictionary(x => x.Coordinate,
-                                                   x => int.MaxValue);
-
-        // fScoreMap[x] == our guess to how far x is from the start, using gScore + a guesstimate
-        var fScoreMap = gScoreMap.ToDictionary(x => x.Key,
-                                               x => x.Value);
-
-        gScoreMap[start.Coordinate] = 0;
-        fScoreMap[start.Coordinate] = ManhattanDistanceToEnd(start.Coordinate);
-
-        while (workingSet.Any())
-        {
-            var current = workingSet.OrderBy(x => fScoreMap[x.Coordinate])
-                                    .First();
-
-            if (Equals(current,
-                       endLocation))
+            foreach (var neighborCoordinate in current.Coordinate.GetNeighbors())
             {
-                // We reached the O2 system, return the number of moves needed
-                return gScoreMap[current.Coordinate];
-            }
+                var neighborLocation = caveLocations.IsValidCoordinate(neighborCoordinate)
+                                           ? caveLocations[neighborCoordinate.X,
+                                                           neighborCoordinate.Y]
+                                           : null;
 
-            workingSet.Remove(current);
-
-            foreach (var neighbor in current.Coordinate.GetNeighbors()
-                         .Where(x => caveLocations.IsValidCoordinate(x)))
-            {
-                var neighborLocation = caveLocations[neighbor.X,
-                                                     neighbor.Y];
-
-                var tentativeGScore = gScoreMap[current.Coordinate] + neighborLocation.RiskLevel;
-
-                // This path is better, so record it
-                if (tentativeGScore < gScoreMap[neighbor])
+                if (neighborLocation == null)
                 {
-                    // Update the scores
-                    gScoreMap[neighbor] = tentativeGScore;
-                    fScoreMap[neighbor] = tentativeGScore + ManhattanDistanceToEnd(neighbor);
-                    // Ensure neighbor is in the working set again
-                    workingSet.Add(neighborLocation);
+                    continue;
+                }
+
+                var neighborDistance = distanceToGoal[current] + neighborLocation.RiskLevel;
+
+                if (neighborDistance < distanceToGoal[neighborLocation])
+                {
+                    distanceToGoal[neighborLocation] = neighborDistance;
+                    notVisited.Enqueue(neighborLocation,
+                                       neighborDistance);
                 }
             }
         }
 
-        throw new Exception("Somehow couldn't find any valid path.");
+        // Subtract the risk level of the start since it doesn't count for the puzzle
+        return distanceToGoal[caveLocations[0,
+                                            0]]
+               - caveLocations[0,
+                               0]
+                   .RiskLevel;
     }
 }
 
