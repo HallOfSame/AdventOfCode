@@ -7,22 +7,25 @@ await solver.Solve();
 
 class Day16Problem : ProblemBase
 {
+    Packet parsedPacket;
+
     protected override Task<string> SolvePartOneInternal()
     {
-        var packet = new PacketParser().ParseHexString(originalHexString);
+        parsedPacket = new PacketParser().ParseHexString(originalHexString);
 
-        return Task.FromResult(packet.GetVersionSum()
-                                     .ToString());
+        return Task.FromResult(parsedPacket.GetVersionSum()
+                                           .ToString());
     }
 
-    protected override async Task<string> SolvePartTwoInternal()
+    protected override Task<string> SolvePartTwoInternal()
     {
-        throw new NotImplementedException();
+        return Task.FromResult(parsedPacket.GetValue()
+                                           .ToString());
     }
 
     public override async Task ReadInput()
     {
-        //originalHexString = "A0016C880162017C3686B18A3D4780";
+        //originalHexString = "9C0141080250320F1802104A08";
         originalHexString = (await new StringFileReader().ReadInputFromFile()).First();
     }
 
@@ -99,11 +102,13 @@ class PacketParser
                        };
             default:
                 // Operator
-                return ParseOperatorPacket(version);
+                return ParseOperatorPacket(version,
+                                           type);
         }
     }
 
-    private Packet ParseOperatorPacket(int version)
+    private Packet ParseOperatorPacket(int version,
+                                       int type)
     {
         var lengthType = GetBinary(1);
 
@@ -140,6 +145,7 @@ class PacketParser
         return new OperatorPacket
                {
                    Version = version,
+                   TypeId = type,
                    InternalPackets = innerPackets.ToArray()
                };
     }
@@ -153,6 +159,8 @@ abstract class Packet
     public abstract int TypeId { get; set; }
 
     public abstract int GetVersionSum();
+
+    public abstract long GetValue();
 }
 
 class LiteralValuePacket : Packet
@@ -165,11 +173,16 @@ class LiteralValuePacket : Packet
     {
         return this.Version;
     }
+
+    public override long GetValue()
+    {
+        return this.Value;
+    }
 }
 
 class OperatorPacket : Packet
 {
-    public override int TypeId { get; set; } = PacketTypes.Operator;
+    public override int TypeId { get; set; }
 
     public Packet[] InternalPackets { get; set; }
 
@@ -179,11 +192,73 @@ class OperatorPacket : Packet
                               .Sum()
                + this.Version;
     }
+
+    public override long GetValue()
+    {
+        long GetComparison()
+        {
+            var valueOne = this.InternalPackets[0]
+                               .GetValue();
+            var valueTwo = this.InternalPackets[1]
+                               .GetValue();
+
+            switch (this.TypeId)
+            {
+                case PacketTypes.Gt:
+                    return valueOne > valueTwo
+                               ? 1L
+                               : 0L;
+                case PacketTypes.Lt:
+                    return valueOne < valueTwo
+                               ? 1L
+                               : 0L;
+                case PacketTypes.Eq:
+                    return valueOne == valueTwo
+                               ? 1L
+                               : 0L;
+            }
+
+            throw new InvalidOperationException();
+        }
+
+        switch (this.TypeId)
+        {
+            case PacketTypes.Sum:
+                return this.InternalPackets.Sum(x => x.GetValue());
+            case PacketTypes.Product:
+                return this.InternalPackets.Aggregate(1L,
+                                                      (curr,
+                                                       next) => curr * next.GetValue());
+            case PacketTypes.Min:
+                return this.InternalPackets.Min(x => x.GetValue());
+            case PacketTypes.Max:
+                return this.InternalPackets.Max(x => x.GetValue());
+            case PacketTypes.Gt:
+            case PacketTypes.Lt:
+            case PacketTypes.Eq:
+                return GetComparison();
+            default:
+                throw new ArgumentOutOfRangeException(nameof(TypeId),
+                                                      "Type ID value not supported.");
+        }
+    }
 }
 
 static class PacketTypes
 {
     public const int Literal = 4;
 
-    public const int Operator = 0;
+    public const int Sum = 0;
+
+    public const int Product = 1;
+
+    public const int Min = 2;
+
+    public const int Max = 3;
+
+    public const int Gt = 5;
+
+    public const int Lt = 6;
+
+    public const int Eq = 7;
 }
