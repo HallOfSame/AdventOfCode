@@ -10,7 +10,7 @@ class Day17Problem : ProblemBase
     {
         // If we had x > maxX we would just go straight past the target
         var xRange = Enumerable.Range(1,
-                                      maxX - 1);
+                                      maxX);
 
         var invalidTurns = 0;
         int? bestY = null;
@@ -99,9 +99,45 @@ class Day17Problem : ProblemBase
         return false;
     }
 
-    protected override async Task<string> SolvePartTwoInternal()
+    protected override Task<string> SolvePartTwoInternal()
     {
-        throw new NotImplementedException();
+        // If we had x > maxX we would just go straight past the target
+        var xRange = Enumerable.Range(1,
+                                      maxX);
+
+        var invalidTurns = 0;
+
+        // Can't have yVel lower than minY or we shoot right below the target
+        var yVel = minY;
+
+        var totalHits = 0;
+
+        do
+        {
+            var hitsForThisYVel = xRange.Select(x => TestVelocity(x,
+                                                                  yVel,
+                                                                  out _)
+                                                         ? 1
+                                                         : 0)
+                                        .Sum();
+
+            if (hitsForThisYVel > 0)
+            {
+                invalidTurns = 0;
+            }
+            else
+            {
+                invalidTurns++;
+            }
+
+            totalHits += hitsForThisYVel;
+
+            yVel++;
+        }
+        // Don't stop until we have gone 100 turns without a valid solution
+        while (invalidTurns < 100);
+
+        return Task.FromResult(totalHits.ToString());
     }
 
     public override async Task ReadInput()
