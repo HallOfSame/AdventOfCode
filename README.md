@@ -1,3 +1,3 @@
-# AdventOfCode2020" 
+# AdventOfCode
 
-Solutions to advent of code 2020.
+Solutions to advent of code puzzles.
