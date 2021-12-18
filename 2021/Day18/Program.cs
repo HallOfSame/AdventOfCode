@@ -15,25 +15,54 @@ class Day18Problem : ProblemBase
 
         foreach (var digit in numbersFromInput.Skip(1))
         {
-            var newSum = new Pair
-                         {
-                             Left = currentSum,
-                             Right = digit,
-                         };
-
-            currentSum.Parent = newSum;
-            digit.Parent = newSum;
-
-            currentSum = Reduce(newSum);
+            currentSum = Add(currentSum,
+                             digit);
         }
 
         return currentSum.GetMagnitude()
                          .ToString();
     }
 
+    private Digit Add(Digit one,
+                      Digit two)
+    {
+        var newSum = new Pair
+                     {
+                         Left = one,
+                         Right = two,
+                     };
+
+        one.Parent = newSum;
+        two.Parent = newSum;
+
+        return Reduce(newSum);
+    }
+
     protected override async Task<string> SolvePartTwoInternal()
     {
-        throw new NotImplementedException();
+        var bestSum = 0L;
+
+        foreach (var left in numbersFromInput)
+        {
+            foreach (var right in numbersFromInput)
+            {
+                if (left == right)
+                {
+                    continue;
+                }
+
+                var tempSum = Add(left,
+                                  right)
+                    .GetMagnitude();
+
+                if (tempSum > bestSum)
+                {
+                    bestSum = tempSum;
+                }
+            }
+        }
+
+        return bestSum.ToString();
     }
 
     private RegularNumber? GetNearestRegularNumber(Digit input,
