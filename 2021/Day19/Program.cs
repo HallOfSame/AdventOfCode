@@ -11,6 +11,8 @@ await solver.Solve();
 
 class Day19Problem : ProblemBase
 {
+    private Dictionary<int, Coordinate3d> offsetMap = new Dictionary<int, Coordinate3d>();
+
     protected override async Task<string> SolvePartOneInternal()
     {
         const int BeaconsToMatch = 12;
@@ -70,6 +72,8 @@ class Day19Problem : ProblemBase
                         rotationToMatch = orientation.Rotation;
                         offset = matchedVector[0].Key;
 
+                        offsetMap[scanner.ScannerNumber] = offset;
+
                         AnsiConsole.MarkupLine($"[blue]Adding scanner {matchedScanner} with offset {offset}.[/]");
 
                         absoluteScanner.DetectedBeacons = absoluteScanner.DetectedBeacons.Concat(orientation.UpdatedBeacons.Select(beacon =>
@@ -108,7 +112,35 @@ class Day19Problem : ProblemBase
 
     protected override async Task<string> SolvePartTwoInternal()
     {
-        throw new NotImplementedException();
+        var biggestDistance = 0;
+
+        int ManhattanDistance(Coordinate3d one,
+                              Coordinate3d two)
+        {
+            return Math.Abs(one.X - two.X) + Math.Abs(one.Y - two.Y) + Math.Abs(one.Z - two.Z);
+        }
+
+        foreach (var offset in offsetMap)
+        {
+            foreach (var innerOffset in offsetMap)
+            {
+                if (offset.Key == innerOffset.Key)
+                {
+                    continue;
+                }
+
+                var distance = ManhattanDistance(offset.Value,
+                                                 innerOffset.Value);
+
+                if (distance > biggestDistance)
+                {
+                    biggestDistance = distance;
+                    AnsiConsole.MarkupLine($"[aqua]Found new biggest distance {distance} between {offset.Key} and {innerOffset.Key}.[/]");
+                }
+            }
+        }
+
+        return biggestDistance.ToString();
     }
 
     public override async Task ReadInput()
