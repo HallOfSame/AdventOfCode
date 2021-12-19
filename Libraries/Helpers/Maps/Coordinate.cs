@@ -80,6 +80,11 @@ namespace Helpers.Maps
                            right);
         }
 
+        public override string ToString()
+        {
+            return $"({X}, {Y})";
+        }
+
         #endregion
     }
 }
