@@ -16,20 +16,32 @@ class Day20Problem : ProblemBase
 
         var enhancer = new ImageEnhancer(enhancementTemplate);
 
-        var enhancedOnce = enhancer.Enhance(originalImage);
+        var enhancedOnce = enhancer.Enhance(originalImage,
+                                            1);
 
         //ImageRenderer.DrawImage(enhancedOnce, "Once");
 
-        var enhancedTwice = enhancer.Enhance(enhancedOnce);
+        var enhancedTwice = enhancer.Enhance(enhancedOnce,
+                                             2);
 
         //ImageRenderer.DrawImage(enhancedTwice, "Twice");
 
         return Task.FromResult(enhancedTwice.Pixels.Values.Count(x => x.IsLit).ToString());
     }
 
-    protected override async Task<string> SolvePartTwoInternal()
+    protected override Task<string> SolvePartTwoInternal()
     {
-        throw new NotImplementedException();
+        var enhancer = new ImageEnhancer(enhancementTemplate);
+
+        var image = originalImage;
+
+        for (var i = 1; i <= 50; i++)
+        {
+            image = enhancer.Enhance(image,
+                                     i);
+        }
+
+        return Task.FromResult(image.Pixels.Values.Count(x => x.IsLit).ToString());
     }
 
     public override async Task ReadInput()
@@ -78,7 +90,8 @@ class ImageEnhancer
         this.enhancementTemplate = enhancementTemplate.ToCharArray();
     }
 
-    public Image Enhance(Image inputImage)
+    public Image Enhance(Image inputImage,
+                         int enhancement)
     {
         var enhancedImage = new Image();
 
@@ -110,7 +123,9 @@ class ImageEnhancer
         }
 
         // If all 0s become lit, we need to know that in the image for further processing
-        if (enhancementTemplate[0] == '#')
+        // This happens every other enhancement, when the value for 0 is lit
+        // On the even enhancements, the infinite plane of pixels are all off
+        if (enhancementTemplate[0] == '#' && enhancement % 2 == 1)
         {
             enhancedImage.UntrackedPixelsAreLit = true;
         }
