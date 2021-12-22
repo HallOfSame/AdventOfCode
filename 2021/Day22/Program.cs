@@ -1,5 +1,4 @@
 ﻿using Helpers;
-using Helpers.Maps._3D;
 using Helpers.Structure;
 
 var solver = new Solver(new Day21Problem());
@@ -8,67 +7,94 @@ await solver.Solve();
 
 class Day21Problem : ProblemBase
 {
-    protected override async Task<string> SolvePartOneInternal()
+    private long GetEnabledCubeCount(Cuboid? maxRange)
     {
-        var reactor = new Dictionary<Coordinate3d, bool>();
+        var commands = commandInputs.ToList();
 
-        for (var x = -50; x <= 50; x++)
+        if (maxRange != null)
         {
-            for(var y = -50; y <= 50; y++)
-            {
-                for (var z = -50; z <= 50; z++)
-                {
-                    reactor.Add(new Coordinate3d(x,
-                                                 y,
-                                                 z),
-                                false);
-                }
-            }
+            // For part 1, alter the input cubes by restricting them to a 100x100x100 cube
+            // And remove the ones that don't affect that region at all
+            commands = commands.Select(x => new Command
+                                            {
+                                                On = x.On,
+                                                AffectedCube = x.AffectedCube.Intersect(maxRange)
+                                            })
+                               .Where(x => x.AffectedCube != null)
+                               .ToList();
         }
 
-        var reactorSize = 100 * 100 * 100;
+        var reactor = new List<Command>();
 
-        foreach (var command in commandInputs)
+        foreach (var command in commands)
         {
-            if (command.AffectedCube.Size < reactorSize)
-            {
-                for (var x = command.AffectedCube.MinX; x <= command.AffectedCube.MaxX; x++)
-                {
-                    for (var y = command.AffectedCube.MinY; y <= command.AffectedCube.MaxY; y++)
-                    {
-                        for (var z = command.AffectedCube.MinZ; z <= command.AffectedCube.MaxZ; z++)
-                        {
-                            var coord = new Coordinate3d(x,
-                                                         y,
-                                                         z);
+            var commandsToAdd = new List<Command>();
 
-                            if (reactor.ContainsKey(coord))
-                            {
-                                reactor[coord] = command.On;
-                            }
-                        }
-                    }
+            if (command.On)
+            {
+                // If an on command, add since everything starts off
+                commandsToAdd.Add(command);
+            }
+
+            foreach (var otherRegion in reactor)
+            {
+                var intersect = otherRegion.AffectedCube.Intersect(command.AffectedCube);
+
+                if (intersect != null)
+                {
+                    // If we intersect with existing commands, add an inverse to keep the count accurate
+                    // Instead of splitting the cubes (math is hard) we just count both cubes as on and then count the intersect as off
+                    commandsToAdd.Add(new Command
+                                      {
+                                          AffectedCube = intersect,
+                                          On = !otherRegion.On
+                                      });
                 }
+            }
+
+            reactor.AddRange(commandsToAdd);
+        }
+
+        var onCount = 0L;
+
+        // Now just loop through the processed command list adding and subtracting
+        foreach (var resultCommand in reactor)
+        {
+            if (resultCommand.On)
+            {
+                onCount += resultCommand.AffectedCube.Size;
             }
             else
             {
-                foreach (var (coordinate, _) in reactor)
-                {
-                    if (command.AffectedCube.Contains(coordinate))
-                    {
-                        reactor[coordinate] = command.On;
-                    }
-                }
-            }
+                onCount -= resultCommand.AffectedCube.Size;
+            }    
         }
 
-        return reactor.Count(x => x.Value)
-                      .ToString();
+        return onCount;
+    }
+
+    protected override async Task<string> SolvePartOneInternal()
+    {
+        var boundingCube = new Cuboid
+                           {
+                               MinX = -50,
+                               MaxX = 50,
+                               MinY = -50,
+                               MaxY = 50,
+                               MinZ = -50,
+                               MaxZ = 50,
+                           };
+
+        var count = GetEnabledCubeCount(boundingCube);
+
+        return count.ToString();
     }
 
     protected override async Task<string> SolvePartTwoInternal()
     {
-        throw new NotImplementedException();
+        var count = GetEnabledCubeCount(null);
+
+        return count.ToString();
     }
 
     public override async Task ReadInput()
@@ -88,29 +114,56 @@ class Command
 
 class Cuboid
 {
-    public int MinX { get; set; }
+    public long MinX { get; set; }
 
-    public int MaxX { get; set; }
+    public long MaxX { get; set; }
 
-    public int MinY { get; set; }
+    public long MinY { get; set; }
 
-    public int MaxY { get; set; }
+    public long MaxY { get; set; }
 
-    public int MinZ { get; set; }
+    public long MinZ { get; set; }
 
-    public int MaxZ { get; set; }
+    public long MaxZ { get; set; }
 
-    public int Size
+    public long Size
     {
         get
         {
-            return Math.Abs((MaxX - MinX) * (MaxY - MinY) * (MaxZ - MinZ));
+            return Math.Abs((MaxX - MinX + 1) * (MaxY - MinY + 1) * (MaxZ - MinZ + 1));
         }
     }
 
-    public bool Contains(Coordinate3d coordinate)
+    public Cuboid? Intersect(Cuboid other)
     {
-        return coordinate.X >= MinX && coordinate.X <= MaxX && coordinate.Y >= MinY && coordinate.Y <= MaxY && coordinate.Z >= MinZ && coordinate.Z <= MaxZ;
+        if (this.MinX > other.MaxX
+            || this.MaxX < other.MinX
+            || this.MinY > other.MaxY
+            || this.MaxY < other.MinY
+            || this.MinZ > other.MaxZ
+            || this.MaxZ < other.MinZ)
+        {
+            return null;
+        }
+
+        var xMin = Math.Max(this.MinX, other.MinX);
+        var xMax = Math.Min(this.MaxX, other.MaxX);
+
+        var yMin = Math.Max(this.MinY, other.MinY);
+        var yMax = Math.Min(this.MaxY, other.MaxY);
+
+        var zMin = Math.Max(this.MinZ, other.MinZ);
+        var zMax = Math.Min(this.MaxZ, other.MaxZ);
+
+        return new Cuboid
+               {
+                   MinX = xMin,
+                   MaxX = xMax,
+                   MinY = yMin,
+                   MaxY = yMax,
+                   MinZ = zMin,
+                   MaxZ = zMax
+               };
     }
 }
 
@@ -125,12 +178,12 @@ class CommandReader : FileReader<Command>
         var coordSplit = initialSplit[1]
             .Split(',');
 
-        (int min, int max) GetCoordRange(string range)
+        (long min, long max) GetCoordRange(string range)
         {
             var rangeSplit = range.Substring(2)
                                   .Split("..");
 
-            return (int.Parse(rangeSplit[0]), int.Parse(rangeSplit[1]));
+            return (long.Parse(rangeSplit[0]), long.Parse(rangeSplit[1]));
         }
 
         var xRange = GetCoordRange(coordSplit[0]);
