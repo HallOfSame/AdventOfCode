@@ -1,10 +1,4 @@
-﻿using System.Diagnostics;
-
-using Helpers.Extensions;
-using Helpers.Maps;
-using Helpers.Structure;
-
-using Spectre.Console;
+﻿using Helpers.Structure;
 
 var solver = new Solver(new Day23Problem());
 
@@ -28,26 +22,38 @@ class Day23Problem : ProblemBase
                                            new()
                                            {
                                                Index = 2,
-                                               Top = MapItem.Desert,
-                                               Bottom = MapItem.Bronze
+                                               Inhabitants = new []
+                                                            {
+                                                                MapItem.Desert,
+                                                                MapItem.Bronze
+                                                            }
                                            },
                                            new()
                                            {
                                                Index = 4,
-                                               Top = MapItem.Desert,
-                                               Bottom = MapItem.Amber
+                                               Inhabitants = new []
+                                                             {
+                                                                 MapItem.Desert,
+                                                                 MapItem.Amber
+                                                             }
                                            },
                                            new()
                                            {
                                                Index = 6,
-                                               Top = MapItem.Copper,
-                                               Bottom = MapItem.Amber
+                                               Inhabitants = new []
+                                                             {
+                                                                 MapItem.Copper,
+                                                                 MapItem.Amber
+                                                             }
                                            },
                                            new()
                                            {
                                                Index = 8,
-                                               Top = MapItem.Bronze,
-                                               Bottom = MapItem.Copper
+                                               Inhabitants = new []
+                                                             {
+                                                                 MapItem.Bronze,
+                                                                 MapItem.Copper
+                                                             }
                                            }
                                        }
                            };
@@ -64,7 +70,58 @@ class Day23Problem : ProblemBase
 
     protected override async Task<string> SolvePartTwoInternal()
     {
-        throw new NotImplementedException();
+        var updatedPosition = new Burrow
+                              {
+                                  Hallway = (MapItem[])startingPosition.Hallway.Clone(),
+                                  Rooms = startingPosition.Rooms.Select((originalRoom,
+                                                                         idx) =>
+                                                                        {
+                                                                            var newInhabitants = new MapItem[4];
+
+                                                                            newInhabitants[0] = originalRoom.Inhabitants[0];
+
+                                                                            newInhabitants[3] = originalRoom.Inhabitants[1];
+
+                                                                            var idxOne = MapItem.Empty;
+                                                                            var idxTwo = MapItem.Empty;
+
+                                                                            switch (idx)
+                                                                            {
+                                                                                case 0:
+                                                                                    idxOne = MapItem.Desert;
+                                                                                    idxTwo = MapItem.Desert;
+                                                                                    break;
+                                                                                case 1:
+                                                                                    idxOne = MapItem.Copper;
+                                                                                    idxTwo = MapItem.Bronze;
+                                                                                    break;
+                                                                                case 2:
+                                                                                    idxOne = MapItem.Bronze;
+                                                                                    idxTwo = MapItem.Amber;
+                                                                                    break;
+                                                                                case 3:
+                                                                                    idxOne = MapItem.Amber;
+                                                                                    idxTwo = MapItem.Copper;
+                                                                                    break;
+                                                                            }
+
+                                                                            newInhabitants[1] = idxOne;
+                                                                            newInhabitants[2] = idxTwo;
+
+                                                                            return new Room
+                                                                                   {
+                                                                                       Index = originalRoom.Index,
+                                                                                       Inhabitants = newInhabitants
+                                                                                   };
+                                                                        })
+                                                          .ToArray()
+                              };
+
+        var solve = new BurrowSolver();
+
+        var energyNeeded = solve.GetEnergyRequired(updatedPosition);
+
+        return energyNeeded.ToString();
     }
 
     #endregion
@@ -74,6 +131,9 @@ class BurrowSolver
 {
     public int GetEnergyRequired(Burrow start)
     {
+        var roomSize = start.Rooms[0]
+                            .Inhabitants.Length;
+
         // Copying the base alg from day 15
         var goal = new Burrow
                    {
@@ -85,26 +145,30 @@ class BurrowSolver
                                    new()
                                    {
                                        Index = 2,
-                                       Top = MapItem.Amber,
-                                       Bottom = MapItem.Amber
+                                       Inhabitants = Enumerable.Repeat(MapItem.Amber,
+                                                                       roomSize)
+                                                               .ToArray()
                                    },
                                    new()
                                    {
                                        Index = 4,
-                                       Top = MapItem.Bronze,
-                                       Bottom = MapItem.Bronze
+                                       Inhabitants = Enumerable.Repeat(MapItem.Bronze,
+                                                                       roomSize)
+                                                               .ToArray()
                                    },
                                    new()
                                    {
                                        Index = 6,
-                                       Top = MapItem.Copper,
-                                       Bottom = MapItem.Copper
+                                       Inhabitants = Enumerable.Repeat(MapItem.Copper,
+                                                                       roomSize)
+                                                               .ToArray()
                                    },
                                    new()
                                    {
                                        Index = 8,
-                                       Top = MapItem.Desert,
-                                       Bottom = MapItem.Desert
+                                       Inhabitants = Enumerable.Repeat(MapItem.Desert,
+                                                                       roomSize)
+                                                               .ToArray()
                                    }
                                }
                    };
@@ -202,9 +266,7 @@ class Burrow
 
     public (Burrow, int)? GetMoveInFromOtherRoom(Room room)
     {
-        var itemToMove = room.Top != MapItem.Empty
-                             ? room.Top
-                             : room.Bottom;
+        var itemToMove = room.Inhabitants.First(x => x != MapItem.Empty);
 
         var roomIndex = itemToMove switch
         {
@@ -241,7 +303,7 @@ class Burrow
         }
 
         if (!destinationRoom.HasSpace()
-            || destinationRoom.Bottom != itemToMove)
+            || destinationRoom.Inhabitants.Any(x => x != itemToMove && x != MapItem.Empty))
         {
             // It's not valid to move this item back in yet
             // The room is full, or has the wrong type still in it
@@ -250,39 +312,25 @@ class Burrow
 
         var updatedHallway = (MapItem[])Hallway.Clone();
 
-        var addToBottom = destinationRoom.Bottom == MapItem.Empty;
+        var index = Array.LastIndexOf(destinationRoom.Inhabitants,
+                                  MapItem.Empty);
 
-        var updatedDestinationRoom = new Room
-                                     {
-                                         Top = addToBottom
-                                                   ? destinationRoom.Top
-                                                   : itemToMove,
-                                         Bottom = addToBottom
-                                                      ? itemToMove
-                                                      : destinationRoom.Bottom,
-                                         Index = destinationRoom.Index
-                                     };
+        var updatedDestinationRoom = destinationRoom.Clone();
 
-        var takeFromTop = room.Top != MapItem.Empty;
+        updatedDestinationRoom.Inhabitants[index] = itemToMove;
 
-        var updatedSourceRoom = new Room
-                                {
-                                    Top = MapItem.Empty,
-                                    Bottom = takeFromTop
-                                                 ? room.Bottom
-                                                 : MapItem.Empty,
-                                    Index = room.Index
-                                };
+        var sourceIndex = Array.IndexOf(room.Inhabitants,
+                                        itemToMove);
+
+        var updatedSourceRoom = room.Clone();
+
+        updatedSourceRoom.Inhabitants[sourceIndex] = MapItem.Empty;
 
         var moveDistance = Math.Abs(room.Index - destinationRoom.Index);
 
-        moveDistance += addToBottom
-                            ? 2
-                            : 1;
+        moveDistance += sourceIndex + 1;
 
-        moveDistance += takeFromTop
-                            ? 1
-                            : 2;
+        moveDistance += index + 1;
 
         var energyUsed = GetMoveEnergy(moveDistance,
                                        itemToMove);
@@ -328,7 +376,7 @@ class Burrow
             return null;
         }
 
-        if (room.Top != MapItem.Empty || (room.Bottom != MapItem.Empty && room.Bottom != itemToMove))
+        if (!room.HasSpace() || room.Inhabitants.Any(x => x != itemToMove && x != MapItem.Empty))
         {
             // It's not valid to move this item back in yet
             // The room is full, or has the wrong type still in it
@@ -339,24 +387,15 @@ class Burrow
 
         updatedHallway[hallwayIndex] = MapItem.Empty;
 
-        var addToBottom = room.Bottom == MapItem.Empty;
+        var emptyIndex =  Array.LastIndexOf(room.Inhabitants, MapItem.Empty);
 
-        var updatedRoom = new Room
-                          {
-                              Top = addToBottom
-                                        ? room.Top
-                                        : itemToMove,
-                              Bottom = addToBottom
-                                           ? itemToMove
-                                           : room.Bottom,
-                              Index = room.Index
-                          };
+        var updatedRoom = room.Clone();
+
+        updatedRoom.Inhabitants[emptyIndex] = itemToMove;
 
         var moveDistance = Math.Abs(roomIndex - hallwayIndex);
 
-        moveDistance += addToBottom
-                            ? 2
-                            : 1;
+        moveDistance += emptyIndex + 1;
 
         var energyUsed = GetMoveEnergy(moveDistance,
                                        itemToMove);
@@ -432,22 +471,14 @@ class Burrow
         PopulateOpenSpots(checkLeft);
         PopulateOpenSpots(checkRight);
 
-        var moveTop = room.Top != MapItem.Empty;
+        var moveIndex = Array.FindIndex(room.Inhabitants,
+                                        x => x != MapItem.Empty);
 
-        var itemToMove = moveTop
-                             ? room.Top
-                             : room.Bottom;
+        var itemToMove = room.Inhabitants[moveIndex];
 
-        var updatedRoom = new Room
-                          {
-                              Index = room.Index,
-                              Top = moveTop
-                                        ? MapItem.Empty
-                                        : room.Top,
-                              Bottom = moveTop
-                                           ? room.Bottom
-                                           : MapItem.Empty
-                          };
+        var updatedRoom = room.Clone();
+
+        updatedRoom.Inhabitants[moveIndex] = MapItem.Empty;
 
         var possibleNewBurrows = new List<(Burrow, int)>(openHallwaySpots.Count);
 
@@ -455,9 +486,7 @@ class Burrow
         {
             var moveDistance = Math.Abs(room.Index - index);
 
-            moveDistance += moveTop
-                                ? 1
-                                : 2;
+            moveDistance += moveIndex + 1;
 
             var moveEnergy = GetMoveEnergy(moveDistance,
                                            itemToMove);
@@ -514,7 +543,7 @@ class Burrow
                                         Hallway);
 
         var roomString = string.Join(string.Empty,
-                                     Rooms.Select(x => $"{x.Top}{x.Bottom}"));
+                                     Rooms.Select(x => x.GetHashCode()));
 
         return HashCode.Combine(hallwayString,
                                 roomString);
@@ -523,36 +552,33 @@ class Burrow
 
 class Room
 {
-    public MapItem Top { get; set; }
-
-    public MapItem Bottom { get; set; }
+    public MapItem[] Inhabitants { get; set; }
 
     public int Index { get; set; }
 
     public bool IsEmpty()
     {
-        return Top == MapItem.Empty && Bottom == MapItem.Empty;
+        return Inhabitants.All(x => x == MapItem.Empty);
     }
 
     public bool HasSpace()
     {
         // Only need to check the top here, can't have a case where bottom is empty but top isn't
-        return Top == MapItem.Empty;
+        return Inhabitants[0] == MapItem.Empty;
     }
 
     public Room Clone()
     {
         return new Room
                {
-                   Top = this.Top,
-                   Bottom = this.Bottom,
+                   Inhabitants = (MapItem[])Inhabitants.Clone(),
                    Index = this.Index
                };
     }
 
     protected bool Equals(Room other)
     {
-        return Top == other.Top && Bottom == other.Bottom && Index == other.Index;
+        return this.Inhabitants.SequenceEqual(other.Inhabitants);
     }
 
     public override bool Equals(object? obj)
@@ -579,8 +605,10 @@ class Room
 
     public override int GetHashCode()
     {
-        return HashCode.Combine((int)Top,
-                                (int)Bottom,
+        var inhabitantString = string.Join(string.Empty,
+                                           Inhabitants);
+
+        return HashCode.Combine(inhabitantString,
                                 Index);
     }
 }
@@ -595,7 +623,5 @@ enum MapItem
 
     Copper = 3,
 
-    Desert = 4,
-
-    Wall = 5
+    Desert = 4
 }
