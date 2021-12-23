@@ -223,19 +223,21 @@ class Burrow
     public (Burrow, int)[] GetPossibleMoves()
     {
         // Possible moves include:
-        var possibleMoves = new List<(Burrow, int)>();
+        // About 100 possible moves total, but making a list that large is inefficient
+        var possibleMoves = new List<(Burrow, int)>(35);
 
         // Moving something out of a room:
         foreach (var room in Rooms)
         {
-            if (room.IsEmpty())
+            // If the room is empty or correct, we don't need to keep checking it
+            if (room.IsEmpty() || room.IsCorrect())
             {
                 continue;
             }
 
             possibleMoves.AddRange(GetMoveOut(room));
 
-            var possibleRoomToRoomMove = GetMoveInFromOtherRoom(room);
+            var possibleRoomToRoomMove = GetMoveOutToOtherRoom(room);
 
             if (possibleRoomToRoomMove != null)
             {
@@ -264,7 +266,7 @@ class Burrow
         return possibleMoves.ToArray();
     }
 
-    public (Burrow, int)? GetMoveInFromOtherRoom(Room room)
+    public (Burrow, int)? GetMoveOutToOtherRoom(Room room)
     {
         var itemToMove = room.Inhabitants.First(x => x != MapItem.Empty);
 
@@ -403,11 +405,16 @@ class Burrow
         return (new Burrow
                 {
                     Hallway = updatedHallway,
-                    Rooms = this.Rooms.Select(r => r.Index == updatedRoom.Index
-                                                       ? updatedRoom
-                                                       : r.Clone())
-                                .ToArray()
+                    Rooms = GetUpdatedRooms(updatedRoom)
                 }, energyUsed);
+    }
+
+    private Room[] GetUpdatedRooms(Room changedRoom)
+    {
+        return this.Rooms.Select(r => r.Index == changedRoom.Index
+                                          ? changedRoom
+                                          : r)
+                   .ToArray();
     }
 
     public int GetMoveEnergy(int distance,
@@ -426,7 +433,7 @@ class Burrow
 
     public (Burrow, int)[] GetMoveOut(Room room)
     {
-        var openHallwaySpots = new List<int>();
+        var openHallwaySpots = new List<int>(11);
 
         // Start by checking to the left
 
@@ -495,10 +502,7 @@ class Burrow
 
             updatedHallway[index] = itemToMove;
 
-            var updatedRooms = this.Rooms.Select(r => r.Index == room.Index
-                                                          ? updatedRoom
-                                                          : r.Clone())
-                                   .ToArray();
+            var updatedRooms = GetUpdatedRooms(updatedRoom);
 
             possibleNewBurrows.Add((new Burrow
                                     {
@@ -539,14 +543,21 @@ class Burrow
 
     public override int GetHashCode()
     {
-        var hallwayString = string.Join(string.Empty,
-                                        Hallway);
+        var hash = 0;
 
-        var roomString = string.Join(string.Empty,
-                                     Rooms.Select(x => x.GetHashCode()));
+        foreach (var x in Hallway)
+        {
+            hash *= 17;
+            hash += x.GetHashCode();
+        }
 
-        return HashCode.Combine(hallwayString,
-                                roomString);
+        foreach (var z in Rooms)
+        {
+            hash *= 17;
+            hash += z.GetHashCode();
+        }
+
+        return hash;
     }
 }
 
@@ -565,6 +576,25 @@ class Room
     {
         // Only need to check the top here, can't have a case where bottom is empty but top isn't
         return Inhabitants[0] == MapItem.Empty;
+    }
+
+    private MapItem ExpectedItem
+    {
+        get
+        {
+            return Index switch
+            {
+                2 => MapItem.Amber,
+                4 => MapItem.Bronze,
+                6 => MapItem.Copper,
+                8 => MapItem.Desert
+            };
+        }
+    }
+
+    public bool IsCorrect()
+    {
+        return Inhabitants.All(x => x == ExpectedItem);
     }
 
     public Room Clone()
@@ -605,11 +635,15 @@ class Room
 
     public override int GetHashCode()
     {
-        var inhabitantString = string.Join(string.Empty,
-                                           Inhabitants);
+        var hash = Index;
 
-        return HashCode.Combine(inhabitantString,
-                                Index);
+        foreach (var x in Inhabitants)
+        {
+            hash *= 17;
+            hash += x.GetHashCode();
+        }
+
+        return hash;
     }
 }
 
