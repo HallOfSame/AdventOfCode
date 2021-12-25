@@ -14,7 +14,8 @@ namespace Helpers.Extensions
         #region Class Methods
 
         public static void Draw<T>(this T[,] array,
-                                   Func<T, string> getDisplayText)
+                                   Func<T, string> getDisplayText,
+                                   string title = null)
         {
             var borderLength = array.GetLength(0);
 
@@ -27,7 +28,7 @@ namespace Helpers.Extensions
                                                               .ToArray()));
             }
 
-            DrawBorder();
+            //DrawBorder();
 
             for (var y = 0; y < array.GetLength(1); y++)
             {
@@ -40,9 +41,14 @@ namespace Helpers.Extensions
                 stringBuilder.Append(Environment.NewLine);
             }
 
-            DrawBorder();
+            //DrawBorder();
 
-            AnsiConsole.WriteLine(stringBuilder.ToString());
+            var panel = new Panel(stringBuilder.ToString())
+                        {
+                            Header = new PanelHeader(title ?? "2D Array")
+                        };
+
+            AnsiConsole.Write(panel);
         }
 
         public static bool IsValidCoordinate<T>(this T[,] array,
