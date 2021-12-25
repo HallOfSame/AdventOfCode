@@ -20,6 +20,7 @@ class Day25Problem : ProblemBase
 
     protected override async Task<string> SolvePartTwoInternal()
     {
+        // No part 2, just getting 49 stars
         throw new NotImplementedException();
     }
 
