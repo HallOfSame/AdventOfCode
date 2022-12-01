@@ -17,6 +17,8 @@ namespace Helpers.Structure
 
         private const string NotImplementedText = "Not Implemented";
 
+        private const string SuccessText = "Success";
+
         public Solver(ProblemBase problem)
         {
             this.problem = problem;
@@ -47,7 +49,7 @@ namespace Helpers.Structure
                                                      readInput = new ResultInfo
                                                                  {
                                                                      ElapsedMs = stopwatch.ElapsedMilliseconds,
-                                                                     Result = "Success"
+                                                                     Result = SuccessText
                                                                  };
                                                  }
                                                  catch (Exception ex)
@@ -56,7 +58,7 @@ namespace Helpers.Structure
                                                      readInput = new ResultInfo
                                                                  {
                                                                      ElapsedMs = ExceptionTime,
-                                                                     Result = "Exception"
+                                                                     Result = ExceptionText
                                                                  };
                                                  }
 
@@ -85,7 +87,7 @@ namespace Helpers.Structure
                                                      partOne = new ResultInfo
                                                                {
                                                                    ElapsedMs = NotImplementedTime,
-                                                                   Result = "Not Implemented"
+                                                                   Result = NotImplementedText
                                                                };
                                                  }
                                                  catch (Exception ex)
@@ -95,7 +97,7 @@ namespace Helpers.Structure
                                                      partOne = new ResultInfo
                                                                {
                                                                    ElapsedMs = ExceptionTime,
-                                                                   Result = "Exception"
+                                                                   Result = ExceptionText
                                                                };
                                                  }
 
@@ -123,7 +125,7 @@ namespace Helpers.Structure
                                                      partTwo = new ResultInfo
                                                                {
                                                                    ElapsedMs = NotImplementedTime,
-                                                                   Result = "Not Implemented"
+                                                                   Result = NotImplementedText
                                                                };
                                                  }
                                                  catch (Exception ex)
@@ -132,7 +134,7 @@ namespace Helpers.Structure
                                                      partTwo = new ResultInfo
                                                                {
                                                                    ElapsedMs = ExceptionTime,
-                                                                   Result = "Exception"
+                                                                   Result = ExceptionText
                                                                };
                                                  }
 
@@ -151,11 +153,12 @@ namespace Helpers.Structure
         private void LogException(Exception ex)
         {
             AnsiConsole.WriteException(ex,
-                                        ExceptionFormats.ShortenPaths | ExceptionFormats.ShortenTypes |
-                                        ExceptionFormats.ShortenMethods | ExceptionFormats.ShowLinks);
+                                       ExceptionFormats.ShortenPaths | ExceptionFormats.ShortenTypes | ExceptionFormats.ShortenMethods | ExceptionFormats.ShowLinks);
         }
 
-        private void DisplayResults(ResultInfo readInput, ResultInfo partOne, ResultInfo partTwo)
+        private void DisplayResults(ResultInfo readInput,
+                                    ResultInfo partOne,
+                                    ResultInfo partTwo)
         {
             AnsiConsole.WriteLine();
             AnsiConsole.WriteLine();
@@ -167,7 +170,8 @@ namespace Helpers.Structure
             table.AddColumn("Result");
             table.AddColumn("Elapsed Time {ms}");
 
-            string FormatResult(string result, string defaultColor)
+            string FormatResult(string result,
+                                string defaultColor)
             {
                 var color = defaultColor;
 
@@ -199,13 +203,47 @@ namespace Helpers.Structure
                 return $"[green]{time}[/]";
             }
 
-            table.AddRow("Read Input", FormatResult(readInput.Result, "blue") ,FormatTime(readInput.ElapsedMs));
-            table.AddRow("Part One", FormatResult(partOne.Result, "green") ,FormatTime(partOne.ElapsedMs));
-            table.AddRow("Part Two", FormatResult(partTwo.Result, "green"),FormatTime(partTwo.ElapsedMs));
+            string GetAggregateResult()
+            {
+                if (!readInput.Result.Equals(SuccessText))
+                {
+                    return "[red]Incomplete[/]";
+                }
+
+                if (partOne.Result.Equals(ExceptionText)
+                    || partOne.Result.Equals(NotImplementedText))
+                {
+                    return "[red]Incomplete[/]";
+                }
+
+                if (partTwo.Result.Equals(ExceptionText)
+                    || partTwo.Result.Equals(NotImplementedText))
+                {
+                    return "[yellow]Partially Complete[/]";
+                }
+
+                return "[green]Complete[/]";
+            }
+
+            table.AddRow("Read Input",
+                         FormatResult(readInput.Result,
+                                      "blue"),
+                         FormatTime(readInput.ElapsedMs));
+            table.AddRow("Part One",
+                         FormatResult(partOne.Result,
+                                      "green"),
+                         FormatTime(partOne.ElapsedMs));
+            table.AddRow("Part Two",
+                         FormatResult(partTwo.Result,
+                                      "green"),
+                         FormatTime(partTwo.ElapsedMs));
+            table.AddRow("Total",
+                         GetAggregateResult(),
+                         FormatTime(readInput.ElapsedMs + partOne.ElapsedMs + partTwo.ElapsedMs));
 
             AnsiConsole.Write(table);
         }
-        
+
         struct ResultInfo
         {
             public long ElapsedMs;
