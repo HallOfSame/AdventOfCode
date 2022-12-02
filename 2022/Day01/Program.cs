@@ -3,11 +3,11 @@ using Helpers.FileReaders;
 using Helpers.Heaps;
 using Helpers.Structure;
 
-var solver = new Solver(new Day25Problem());
+var solver = new Solver(new Day01Problem());
 
 await solver.Solve();
 
-class Day25Problem : ProblemBase
+class Day01Problem : ProblemBase
 {
     protected override async Task<string> SolvePartOneInternal()
     {
