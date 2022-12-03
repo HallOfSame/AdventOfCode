@@ -200,7 +200,7 @@ namespace Helpers.Structure
                     return $"[red]{time} (Exception)[/]";
                 }
 
-                return $"[green]{time}[/]";
+                return $"[orange1]{time}[/]";
             }
 
             string GetAggregateResult()
