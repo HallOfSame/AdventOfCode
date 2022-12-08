@@ -112,6 +112,36 @@ namespace Helpers.Extensions
             return output;
         }
 
+        /// <summary>
+        /// This is the max Y value for coordinates
+        /// </summary>
+        public static int GetWidth<T>(this T[,] array)
+        {
+            return array.GetLength(0);
+        }
+
+        /// <summary>
+        /// This is the max X value for coordinates
+        /// </summary>
+        public static int GetHeight<T>(this T[,] array)
+        {
+            return array.GetLength(1);
+        }
+
+        /// <summary>
+        /// This is always backwards from how it seems like it should work.
+        /// </summary>
+        /// <param name="x">X coord of the grid to get.</param>
+        /// <param name="y">Y coord of the grid to get.</param>
+        public static T GetCoord<T>(this T[,] array,
+                                    int x,
+                                    int y)
+        {
+            // Somehow you index with y first when thinking of them like coordinates
+            return array[y,
+                         x];
+        }
+
         #endregion
     }
 }
