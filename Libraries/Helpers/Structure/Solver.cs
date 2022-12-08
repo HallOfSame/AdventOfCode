@@ -1,6 +1,7 @@
 ﻿using Spectre.Console;
 using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Helpers.Structure
@@ -28,120 +29,115 @@ namespace Helpers.Structure
         {
             try
             {
-                await AnsiConsole.Status()
-                                 .StartAsync("Running Puzzle Solver...",
-                                             async ctx =>
-                                             {
-                                                 var stopwatch = new Stopwatch();
+                var stopwatch = new Stopwatch();
 
-                                                 stopwatch.Start();
+                stopwatch.Start();
 
-                                                 ResultInfo readInput;
+                ResultInfo readInput;
 
-                                                 AnsiConsole.MarkupLine("[green]Reading input...[/]");
+                AnsiConsole.MarkupLine("[green]Reading input...[/]");
 
-                                                 try
-                                                 {
-                                                     await problem.ReadInput();
+                try
+                {
+                    await problem.ReadInput();
 
-                                                     stopwatch.Stop();
+                    stopwatch.Stop();
 
-                                                     readInput = new ResultInfo
-                                                                 {
-                                                                     ElapsedMs = stopwatch.ElapsedMilliseconds,
-                                                                     Result = SuccessText
-                                                                 };
-                                                 }
-                                                 catch (Exception ex)
-                                                 {
-                                                     LogException(ex);
-                                                     readInput = new ResultInfo
-                                                                 {
-                                                                     ElapsedMs = ExceptionTime,
-                                                                     Result = ExceptionText
-                                                                 };
-                                                 }
+                    readInput = new ResultInfo
+                                {
+                                    ElapsedMs = stopwatch.ElapsedMilliseconds,
+                                    Result = SuccessText
+                                };
+                }
+                catch (Exception ex)
+                {
+                    LogException(ex);
+                    readInput = new ResultInfo
+                                {
+                                    ElapsedMs = ExceptionTime,
+                                    Result = ExceptionText
+                                };
+                }
 
-                                                 AnsiConsole.MarkupLine("[green]Running Part One...[/]");
+                AnsiConsole.MarkupLine("[green]Running Part One...[/]");
 
-                                                 stopwatch.Restart();
+                stopwatch.Restart();
 
-                                                 ResultInfo partOne;
+                ResultInfo partOne;
 
-                                                 try
-                                                 {
-                                                     var partOneResult = await problem.SolvePartOne();
+                try
+                {
+                    var partOneResult = await problem.SolvePartOne();
 
-                                                     stopwatch.Stop();
+                    stopwatch.Stop();
 
-                                                     partOne = new ResultInfo
-                                                               {
-                                                                   ElapsedMs = stopwatch.ElapsedMilliseconds,
-                                                                   Result = partOneResult
-                                                               };
-                                                 }
-                                                 catch (NotImplementedException)
-                                                 {
-                                                     AnsiConsole.MarkupLine("[bold yellow]Part One Not Implemented.[/]");
+                    partOne = new ResultInfo
+                              {
+                                  ElapsedMs = stopwatch.ElapsedMilliseconds,
+                                  Result = partOneResult
+                              };
+                }
+                catch (NotImplementedException)
+                {
+                    AnsiConsole.MarkupLine("[bold yellow]Part One Not Implemented.[/]");
 
-                                                     partOne = new ResultInfo
-                                                               {
-                                                                   ElapsedMs = NotImplementedTime,
-                                                                   Result = NotImplementedText
-                                                               };
-                                                 }
-                                                 catch (Exception ex)
-                                                 {
-                                                     LogException(ex);
+                    partOne = new ResultInfo
+                              {
+                                  ElapsedMs = NotImplementedTime,
+                                  Result = NotImplementedText
+                              };
+                }
+                catch (Exception ex)
+                {
+                    LogException(ex);
 
-                                                     partOne = new ResultInfo
-                                                               {
-                                                                   ElapsedMs = ExceptionTime,
-                                                                   Result = ExceptionText
-                                                               };
-                                                 }
+                    partOne = new ResultInfo
+                              {
+                                  ElapsedMs = ExceptionTime,
+                                  Result = ExceptionText
+                              };
+                }
 
-                                                 AnsiConsole.MarkupLine("[green]Running Part Two...[/]");
+                AnsiConsole.MarkupLine("[green]Running Part Two...[/]");
 
-                                                 stopwatch.Restart();
+                stopwatch.Restart();
 
-                                                 ResultInfo partTwo;
+                ResultInfo partTwo;
 
-                                                 try
-                                                 {
-                                                     var partTwoResult = await problem.SolvePartTwo();
+                try
+                {
+                    var partTwoResult = await problem.SolvePartTwo();
 
-                                                     stopwatch.Stop();
+                    stopwatch.Stop();
 
-                                                     partTwo = new ResultInfo
-                                                               {
-                                                                   ElapsedMs = stopwatch.ElapsedMilliseconds,
-                                                                   Result = partTwoResult
-                                                               };
-                                                 }
-                                                 catch (NotImplementedException)
-                                                 {
-                                                     AnsiConsole.MarkupLine("[bold yellow]Part Two Not Implemented.[/]");
-                                                     partTwo = new ResultInfo
-                                                               {
-                                                                   ElapsedMs = NotImplementedTime,
-                                                                   Result = NotImplementedText
-                                                               };
-                                                 }
-                                                 catch (Exception ex)
-                                                 {
-                                                     LogException(ex);
-                                                     partTwo = new ResultInfo
-                                                               {
-                                                                   ElapsedMs = ExceptionTime,
-                                                                   Result = ExceptionText
-                                                               };
-                                                 }
+                    partTwo = new ResultInfo
+                              {
+                                  ElapsedMs = stopwatch.ElapsedMilliseconds,
+                                  Result = partTwoResult
+                              };
+                }
+                catch (NotImplementedException)
+                {
+                    AnsiConsole.MarkupLine("[bold yellow]Part Two Not Implemented.[/]");
+                    partTwo = new ResultInfo
+                              {
+                                  ElapsedMs = NotImplementedTime,
+                                  Result = NotImplementedText
+                              };
+                }
+                catch (Exception ex)
+                {
+                    LogException(ex);
+                    partTwo = new ResultInfo
+                              {
+                                  ElapsedMs = ExceptionTime,
+                                  Result = ExceptionText
+                              };
+                }
 
-                                                 DisplayResults(readInput,
-                                                                partOne,
-                                                                partTwo);
-                                             });
+                DisplayResults(readInput,
+                               partOne,
+                               partTwo);
             }
             catch (Exception ex)
             {
