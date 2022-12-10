@@ -1,4 +1,5 @@
 ﻿using Helpers;
+using Helpers.Extensions;
 using Helpers.Maps;
 using Helpers.Structure;
 
@@ -8,105 +9,26 @@ namespace PuzzleDays
     {
         protected override async Task<string> SolvePartOneInternal()
         {
-            var tailPositions = new HashSet<Coordinate>();
-
-            var headPos = new Coordinate(0,
-                                         0);
-
-            var tailPos = new Coordinate(0,
-                                         0);
-
-            void ProcessSingleStep(Direction direction)
-            {
-                switch (direction)
-                {
-                    case Direction.North:
-                        headPos.Y += 1;
-                        break;
-                    case Direction.South:
-                        headPos.Y -= 1;
-                        break;
-                    case Direction.East:
-                        headPos.X += 1;
-                        break;
-                    case Direction.West:
-                        headPos.X -= 1;
-                        break;
-                }
-
-                void UpdateTailX()
-                {
-                    // Update tail up or down
-                    if (tailPos.X < headPos.X)
-                    {
-                        tailPos.X++;
-                    }
-                    else
-                    {
-                        tailPos.X--;
-                    }
-                }
-
-                void UpdateTailY()
-                {
-                    // Update tail left or right
-                    if (tailPos.Y < headPos.Y)
-                    {
-                        tailPos.Y++;
-                    }
-                    else
-                    {
-                        tailPos.Y--;
-                    }
-                }
-
-                var rowDiff = Math.Abs(headPos.X - tailPos.X);
-                var columnDiff = Math.Abs(headPos.Y - tailPos.Y);
-
-                if (rowDiff == 0
-                    && columnDiff == 0)
-                {
-                    return;
-                }
-
-                if (rowDiff == 2 && columnDiff == 0)
-                {
-                    // Same row but too far apart, move left / right
-                    UpdateTailX();
-                }
-                else if (rowDiff == 0
-                         && columnDiff == 2)
-                {
-                    // Same col too far, move up or down
-                    UpdateTailY();
-                }
-                else if (rowDiff + columnDiff == 3)
-                {
-                    // Not overlapping or touching diagonally but in different rows and columns
-                    // Move diagonal
-                    UpdateTailX();
-                    UpdateTailY();
-                }
-            }
+            var rope = new Rope(2);
 
             foreach (var move in moves)
             {
-                for (var i = 0; i < move.Distance; i++)
-                {
-                    ProcessSingleStep(move.Direction);
-
-                    tailPositions.Add(tailPos);
-
-                    // Console.WriteLine($"Head: {headPos}\tTail: {tailPos}");
-                }
+                rope.ProcessMove(move);
             }
 
-            return tailPositions.Count.ToString();
+            return rope.TailPositions().ToString();
         }
 
         protected override async Task<string> SolvePartTwoInternal()
         {
-            throw new NotImplementedException();
+            var rope = new Rope(10);
+
+            foreach (var move in moves)
+            {
+                rope.ProcessMove(move);
+            }
+
+            return rope.TailPositions().ToString();
         }
 
         public override async Task ReadInput()
@@ -120,15 +42,16 @@ namespace PuzzleDays
 
 public class Rope
 {
-    private Coordinate[] knots { get; }
+    private readonly Coordinate[] knots;
 
-    private HashSet<Coordinate> tailPositions;
+    private readonly HashSet<Coordinate> tailPositions;
 
     public Rope(int knotCount)
     {
-        knots = Enumerable.Repeat(new Coordinate(0,
-                                                 0),
+        knots = Enumerable.Repeat(0,
                                   knotCount)
+                          .Select(_ => new Coordinate(0,
+                                                      0))
                           .ToArray();
 
         tailPositions = new HashSet<Coordinate>();
@@ -149,20 +72,8 @@ public class Rope
 
     private void ProcessSingleStep(Direction direction)
     {
-        for (var i = 0; i < knots.Length - 1; i++)
-        {
-            ProcessSingleStepSinglePair(direction,
-                                        knots[i],
-                                        knots[i + 1]);
-        }
+        var lead = knots[0];
 
-        tailPositions.Add(knots[^1]);
-    }
-
-    private void ProcessSingleStepSinglePair(Direction direction,
-                                             Coordinate lead,
-                                             Coordinate follower)
-    {
         switch (direction)
         {
             case Direction.North:
@@ -179,6 +90,20 @@ public class Rope
                 break;
         }
 
+        for (var i = 0; i < knots.Length - 1; i++)
+        {
+            ProcessSingleStepSinglePair(direction,
+                                        knots[i],
+                                        knots[i + 1]);
+        }
+
+        tailPositions.Add(knots[^1]);
+    }
+
+    private void ProcessSingleStepSinglePair(Direction direction,
+                                             Coordinate lead,
+                                             Coordinate follower)
+    {
         void UpdateTailX()
         {
             // Update tail up or down
@@ -226,7 +151,7 @@ public class Rope
             // Same col too far, move up or down
             UpdateTailY();
         }
-        else if (rowDiff + columnDiff == 3)
+        else if (rowDiff + columnDiff == 3 || rowDiff == 2 && columnDiff == 2)
         {
             // Not overlapping or touching diagonally but in different rows and columns
             // Move diagonal

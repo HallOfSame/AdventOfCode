@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 using Helpers.Maps;
 
@@ -43,6 +45,49 @@ namespace Helpers.Extensions
                                           startY + 1);
 
             return neighbors.ToList();
+        }
+
+        public static void Draw(this IEnumerable<Coordinate> coordinates,
+                                Func<Coordinate, string> drawAction,
+                                string originMarker = "O",
+                                string emptySpace = ".")
+        {
+            var coordinateSet = coordinates.ToHashSet();
+
+            var minX = coordinates.Min(x => x.X) - 1;
+            var maxX = coordinates.Max(x => x.X) + 1;
+
+            var minY = coordinates.Min(y => y.Y) - 1;
+            var maxY = coordinates.Max(y => y.Y) + 1;
+
+            var sb = new StringBuilder();
+
+            // Going in reverse order for Y draws it in the way you'd expect
+            for (var y = maxY; y >= minY; y--)
+            {
+                for (var x = minX; x <= maxX; x++)
+                {
+                    if (coordinateSet.TryGetValue(new Coordinate(x,
+                                                                 y),
+                                                  out var coordinate))
+                    {
+                        sb.Append(drawAction(coordinate));
+                    }
+                    else if (x == 0
+                             && y == 0)
+                    {
+                        sb.Append(originMarker);
+                    }
+                    else
+                    {
+                        sb.Append(emptySpace);
+                    }
+                }
+
+                sb.Append(Environment.NewLine);
+            }
+
+            Console.WriteLine(sb.ToString());
         }
 
         #endregion
