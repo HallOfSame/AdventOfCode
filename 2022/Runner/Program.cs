@@ -2,7 +2,7 @@
 
 using PuzzleDays;
 
-var problem = new Day11();
+var problem = new Day12();
 
 var solver = new Solver(problem);
 
