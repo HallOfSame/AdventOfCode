@@ -2,7 +2,7 @@
 
 namespace Helpers.Maps
 {
-    public class Coordinate
+    public class Coordinate : ICloneable
     {
         #region Constructors
 
@@ -57,6 +57,17 @@ namespace Helpers.Maps
                                     Y);
         }
 
+        public override string ToString()
+        {
+            return $"({X}, {Y})";
+        }
+
+        public object Clone()
+        {
+            return new Coordinate(X,
+                                  Y);
+        }
+
         protected bool Equals(Coordinate other)
         {
             return X == other.X && Y == other.Y;
@@ -78,11 +89,6 @@ namespace Helpers.Maps
         {
             return !Equals(left,
                            right);
-        }
-
-        public override string ToString()
-        {
-            return $"({X}, {Y})";
         }
 
         #endregion
