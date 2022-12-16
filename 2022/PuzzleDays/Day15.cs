@@ -57,73 +57,67 @@ namespace PuzzleDays
 
         protected override async Task<string> SolvePartTwoInternal()
         {
-            var possibleLocationsPerSensor = sensors.ToList()
-                                                    .AsParallel()
-                                                    .Select((sensor, idx) =>
-                                                            {
-                                                                Console.WriteLine($"Processing sensor number: {idx + 1} of {sensors.Count}");
-                                                                var queue = new Queue<Coordinate>();
+            var searchArea = new Quadrant(0,
+                                          4_000_000,
+                                          0,
+                                          4_000_000);
 
-                                                                queue.Enqueue(new Coordinate(sensor.X,
-                                                                                             sensor.Y + sensor.DistanceToClosestBeacon));
+            List<Quadrant> SplitQuadrantToFourSections(Quadrant q)
+            {
+                var midX = (q.MaxX - q.MinX) / 2;
+                var midY = (q.MaxY - q.MinY) / 2;
 
-                                                                queue.Enqueue(new Coordinate(sensor.X, sensor.Y - sensor.DistanceToClosestBeacon));
+                var upperLeft = new Quadrant(q.MinX,
+                                             q.MinX + midX,
+                                             q.MinY + midY + 1,
+                                             q.MaxY);
 
-                                                                queue.Enqueue(new Coordinate(sensor.X + sensor.DistanceToClosestBeacon,
-                                                                                             sensor.Y));
+                var upperRight = new Quadrant(q.MinX + midX + 1,
+                                              q.MaxX,
+                                              q.MinY + midY + 1,
+                                              q.MaxY);
 
-                                                                queue.Enqueue(new Coordinate(sensor.X - sensor.DistanceToClosestBeacon,
-                                                                                             sensor.Y));
+                var lowerLeft = new Quadrant(q.MinX,
+                                             q.MinX + midX,
+                                             q.MinY,
+                                             q.MinY + midY);
 
-                                                                var result = new HashSet<Coordinate>();
+                var lowerRight = new Quadrant(q.MinX + midX + 1,
+                                              q.MaxX,
+                                              q.MinY,
+                                              q.MinY + midY);
 
-                                                                var visited = new HashSet<Coordinate>();
+                return new List<Quadrant>
+                       {
+                           upperLeft,
+                           upperRight,
+                           lowerLeft,
+                           lowerRight
+                       };
+            }
 
-                                                                while (queue.Any())
-                                                                {
-                                                                    var current = queue.Dequeue();
+            var quadrantsToCheck = new Queue<Quadrant>();
 
-                                                                    visited.Add(current);
+            quadrantsToCheck.Enqueue(searchArea);
 
-                                                                    var neighborsToCheck = current.GetNeighbors(true)
-                                                                                                  .Where(x => x.X is >= 0 and <= 4_000_000 && x.Y is >= 0 and <= 4_000_000 && !visited.Contains(x));
+            Coordinate distressBeacon = null;
 
-                                                                    foreach (var neighbor in neighborsToCheck)
-                                                                    {
-                                                                        var distanceToSensor = CoordinateHelper.ManhattanDistance(sensor,
-                                                                                                                                  neighbor);
+            while (quadrantsToCheck.Any())
+            {
+                var current = quadrantsToCheck.Dequeue();
 
-                                                                        var diff = distanceToSensor - sensor.DistanceToClosestBeacon;
+                if (current.MinX == current.MaxX)
+                {
+                    distressBeacon = current.Corners.First();
+                    break;
+                }
 
-                                                                        if (diff == 1)
-                                                                        {
-                                                                            // If it is exactly one outside of the closest, it is a possible result
-                                                                            if (!IsInvalidBeaconLocation(neighbor))
-                                                                            {
-                                                                                result.Add(neighbor);
-                                                                            }
-                                                                        }
-                                                                        else if (diff is 0 or -1)
-                                                                        {
-                                                                            // Otherwise, keep searching if it is around the borders
-                                                                            // Add to visited here to prevent duplicate adds
-                                                                            visited.Add(neighbor);
-                                                                            queue.Enqueue(neighbor);
-                                                                        }
-                                                                    }
-                                                                }
+                var subSections = SplitQuadrantToFourSections(current);
 
-                                                                return result;
-                                                            })
-                                                    .Aggregate((curr,
-                                                                prev) =>
-                                                               {
-                                                                   curr.UnionWith(prev);
-
-                                                                   return curr;
-                                                               });
-
-            var distressBeacon = possibleLocationsPerSensor.First();
+                subSections.Where(x => x.CanContainMissingCoordinate(sensors))
+                           .ToList()
+                           .ForEach(x => quadrantsToCheck.Enqueue(x));
+            }
 
             var result = ((distressBeacon.X * 4_000_000m) + distressBeacon.Y);
 
@@ -176,6 +170,57 @@ namespace PuzzleDays
         public HashSet<Coordinate> beacons;
 
         public HashSet<Sensor> sensors;
+    }
+}
+
+public class Quadrant
+{
+    public int MinX { get; }
+
+    public int MaxX { get; }
+
+    public int MinY { get; }
+
+    public int MaxY { get; }
+
+    public List<Coordinate> Corners { get; }
+
+    public Quadrant(int minX,
+                    int maxX,
+                    int minY,
+                    int maxY)
+    {
+        if (minY > maxY)
+        {
+            throw new Exception();
+        }
+
+        MinX = minX;
+        MaxX = maxX;
+        MinY = minY;
+        MaxY = maxY;
+        Corners = new List<Coordinate>
+                  {
+                      new(minX,
+                          maxY),
+                      new(minX,
+                          minY),
+                      new(maxX,
+                          maxY),
+                      new(maxX,
+                          minY)
+                  };
+    }
+
+    public bool CanContainMissingCoordinate(IEnumerable<Sensor> sensors)
+    {
+        return sensors.All(sensor =>
+                           {
+                               var maxDistance = Corners.Max(x => CoordinateHelper.ManhattanDistance(x,
+                                                                                                     sensor));
+
+                               return maxDistance > sensor.DistanceToClosestBeacon;
+                           });
     }
 }
 
