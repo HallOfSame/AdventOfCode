@@ -1,14 +1,16 @@
 ﻿using System.Collections.Generic;
 
+using Priority_Queue;
+
 namespace Helpers.Heaps
 {
     public static class MaxHeap
     {
         #region Class Methods
 
-        public static PriorityQueue<T, int> CreateMaxHeap<T>()
+        public static IPriorityQueue<T, int> CreateMaxHeap<T>()
         {
-            return new PriorityQueue<T, int>(new InverseComparer());
+            return new SimplePriorityQueue<T, int>(new InverseComparer());
         }
 
         #endregion

@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 
 using Helpers.FileReaders;
+using Helpers.Heaps;
 using Helpers.Structure;
 
 namespace PuzzleDays
@@ -10,6 +11,51 @@ namespace PuzzleDays
     {
         protected override async Task<string> SolvePartOneInternal()
         {
+            valvesToOpen = valves.Values.Count(x => x.FlowRate > 0);
+
+            // Dijkstra to find the length between valves we could actually open
+            foreach (var (_, valve) in valves)
+            {
+                var distance = valves.Values.ToDictionary(x => x.Name,
+                                                          _ => int.MaxValue);
+
+                distance[valve.Name] = 0;
+
+                var queue = MinHeap.CreateMinHeap<string>();
+
+                foreach (var (value, prio) in distance)
+                {
+                    queue.Enqueue(value,
+                                  prio);
+                }
+                
+
+                while (queue.Any())
+                {
+                    var current = valves[queue.Dequeue()];
+
+                    foreach (var neighbor in current.Neighbors)
+                    {
+                        var alternateDistance = distance[current.Name] + 1;
+
+                        if (alternateDistance < distance[neighbor.Name])
+                        {
+                            distance[neighbor.Name] = alternateDistance;
+                            queue.UpdatePriority(neighbor.Name,
+                                                 alternateDistance);
+                        }
+                    }
+                }
+
+                // Save the distance from this node to all the other valves that have a flow rate
+                valve.OptimizedDistanceMap = distance.Where(x => valves[x.Key]
+                                                                     .FlowRate
+                                                                 > 0
+                                                                 && x.Value != 0)
+                                                     .ToDictionary(x => x.Key,
+                                                                   x => x.Value);
+            }
+
             var result = GetMaxPressureReleased(new List<Valve>(),
                                                 string.Empty,
                                                 valves["AA"],
@@ -20,6 +66,8 @@ namespace PuzzleDays
         }
 
         private Dictionary<string, int> memo = new();
+
+        private int valvesToOpen;
 
         private int GetMaxPressureReleased(List<Valve> openValves,
                                            string openValvesString,
@@ -44,12 +92,21 @@ namespace PuzzleDays
                 return currentPressureReleased;
             }
 
-            int AddPressureReleased()
+            int AddPressureReleased(int minutes)
             {
-                return currentPressureReleased + openValves.Sum(x => x.FlowRate);
+                return currentPressureReleased + (openValves.Sum(x => x.FlowRate) * minutes);
             }
 
             var maxPressurePossibleFromHere = 0;
+
+            // Can skip a lot of empty steps once we get all valves open
+            if (openValves.Count == valvesToOpen)
+            {
+                var bestPressureFromHere = openValves.Sum(x => x.FlowRate) * minutesRemaining;
+
+                memo[scenarioCode] = currentPressureReleased + bestPressureFromHere;
+                return bestPressureFromHere;
+            }
 
             // Options:
             // Open current valve if not open
@@ -57,7 +114,7 @@ namespace PuzzleDays
             if (!currentValve.IsOpen && currentValve.FlowRate > 0)
             {
                 var minutesAfterOpening = minutesRemaining - 1;
-                var updatedRelease = AddPressureReleased();
+                var updatedRelease = AddPressureReleased(1);
                 currentValve.IsOpen = true;
                 openValves.Add(currentValve);
                 var addToCode = $"{currentValve.Name}{minutesAfterOpening}";
@@ -72,11 +129,19 @@ namespace PuzzleDays
                 currentValve.IsOpen = false;
             }
 
-            // Move to neighbor without opening
-            foreach (var neighbor in currentValve.Neighbors)
+            // Move to neighbor without opening, doing calculations here to go directly to a valve that we could open
+            foreach (var (neighborName, distance) in currentValve.OptimizedDistanceMap)
             {
-                var minutesAfterMoving = minutesRemaining - 1;
-                var updatedRelease = AddPressureReleased();
+                var neighbor = valves[neighborName];
+
+                // No reason to move back to an open valve
+                if (openValves.Contains(neighbor))
+                {
+                    continue;
+                }
+
+                var minutesAfterMoving = minutesRemaining - distance;
+                var updatedRelease = AddPressureReleased(distance);
 
                 maxPressurePossibleFromHere = Math.Max(maxPressurePossibleFromHere,
                                                        GetMaxPressureReleased(openValves,
@@ -161,4 +226,6 @@ class Valve
     public int FlowRate { get; init; }
 
     public Valve[] Neighbors { get; init; }
+
+    public Dictionary<string, int> OptimizedDistanceMap { get; set; }
 }

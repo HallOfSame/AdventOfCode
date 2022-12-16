@@ -2,6 +2,8 @@
 using Helpers.Heaps;
 using Helpers.Structure;
 
+using Priority_Queue;
+
 namespace PuzzleDays;
 
 public class Day01Problem : ProblemBase
@@ -9,7 +11,7 @@ public class Day01Problem : ProblemBase
     protected override async Task<string> SolvePartOneInternal()
     {
         // Peek so we can run part 2 easier
-        return elves.Peek()
+        return elves.First
                     .TotalCalories.ToString();
     }
 
@@ -54,7 +56,7 @@ public class Day01Problem : ProblemBase
         AddElfToHeap();
     }
 
-    private PriorityQueue<Elf, int> elves;
+    private IPriorityQueue<Elf, int> elves;
 }
 
 class Elf
