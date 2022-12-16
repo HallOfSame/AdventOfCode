@@ -216,8 +216,14 @@ public class Quadrant
     {
         return sensors.All(sensor =>
                            {
-                               var maxDistance = Corners.Max(x => CoordinateHelper.ManhattanDistance(x,
-                                                                                                     sensor));
+                               var maxDistance = 0;
+
+                               for (var i = 0; i < 4; i++)
+                               {
+                                   maxDistance = Math.Max(CoordinateHelper.ManhattanDistance(Corners[i],
+                                                                                             sensor),
+                                                          maxDistance);
+                               }
 
                                return maxDistance > sensor.DistanceToClosestBeacon;
                            });
