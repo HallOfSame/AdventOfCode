@@ -11,8 +11,6 @@ namespace PuzzleDays
     {
         protected override async Task<string> SolvePartOneInternal()
         {
-            valvesToOpen = valves.Values.Count(x => x.FlowRate > 0);
-
             // Dijkstra to find the length between valves we could actually open
             foreach (var (_, valve) in valves)
             {
@@ -56,79 +54,55 @@ namespace PuzzleDays
                                                                    x => x.Value);
             }
 
-            var result = GetMaxPressureReleased(new List<Valve>(),
-                                                string.Empty,
+            // X == closed
+            // O == open
+            var valveStates = new char[valves.Count];
+
+            foreach (var valve in valves.Values)
+            {
+                valveStates[valve.Index] = valve.FlowRate == 0
+                                               ? 'O'
+                                               : 'X';
+            }
+
+            maxFlow = valves.Values.Sum(x => x.FlowRate);
+
+            var result = GetMaxPressureReleased(valveStates,
                                                 valves["AA"],
                                                 30,
+                                                0,
                                                 0);
 
             return result.ToString();
         }
 
-        private Dictionary<string, int> memo = new();
+        private int maxFlow;
 
-        private int valvesToOpen;
-
-        private int GetMaxPressureReleased(List<Valve> openValves,
-                                           string openValvesString,
+        private int GetMaxPressureReleased(char[] valveStates,
                                            Valve currentValve,
                                            int minutesRemaining,
+                                           int currentFlow,
                                            int currentPressureReleased)
         {
-            var scenarioCode = GetScenarioCode(openValvesString,
-                                               currentValve,
-                                               minutesRemaining);
-
-            if (memo.TryGetValue(scenarioCode,
-                                 out var result))
+            // Return if out of time
+            if (minutesRemaining == 0)
             {
-                return result;
-            }
-
-            // Base case, out of time
-            if (minutesRemaining <= 0)
-            {
-                memo[scenarioCode] = currentPressureReleased;
-
                 return currentPressureReleased;
             }
 
             int AddPressureReleased(int minutes)
             {
-                return currentPressureReleased + (openValves.Sum(x => x.FlowRate) * minutes);
+                return currentPressureReleased + (currentFlow * minutes);
             }
 
             var maxPressurePossibleFromHere = 0;
 
             // Can skip a lot of empty steps once we get all valves open
-            if (openValves.Count == valvesToOpen)
+            if (currentFlow == maxFlow)
             {
-                var bestPressureFromHere = currentPressureReleased + (openValves.Sum(x => x.FlowRate) * minutesRemaining);
-
-                memo[scenarioCode] = bestPressureFromHere;
+                var bestPressureFromHere = AddPressureReleased(minutesRemaining);
 
                 return bestPressureFromHere;
-            }
-
-            // Options:
-            // Open current valve if not open
-            // Skip if it wouldn't release any more pressure
-            if (!currentValve.IsOpen && currentValve.FlowRate > 0)
-            {
-                var minutesAfterOpening = minutesRemaining - 1;
-                var updatedRelease = AddPressureReleased(1);
-                currentValve.IsOpen = true;
-                openValves.Add(currentValve);
-                var addToCode = $"{currentValve.Name}{minutesAfterOpening}";
-                openValvesString += addToCode;
-                maxPressurePossibleFromHere = GetMaxPressureReleased(openValves,
-                                                                     openValvesString,
-                                                                     currentValve,
-                                                                     minutesAfterOpening,
-                                                                     updatedRelease);
-                openValves.RemoveAt(openValves.Count - 1);
-                openValvesString = openValvesString[..^addToCode.Length];
-                currentValve.IsOpen = false;
             }
 
             // Move to neighbor without opening, doing calculations here to go directly to a valve that we could open
@@ -136,41 +110,40 @@ namespace PuzzleDays
             {
                 var neighbor = valves[neighborName];
 
-                // No reason to move back to an open valve
-                if (openValves.Contains(neighbor))
+                // No reason to move to an open valve
+                if (valveStates[neighbor.Index] == 'O')
                 {
                     continue;
                 }
 
-                var minutesAfterMoving = minutesRemaining - distance;
+                var minutesAfterMoveAndOpen = minutesRemaining - (distance + 1);
 
                 // Invalid to move to negative time remaining
-                if (minutesAfterMoving < 0)
+                if (minutesAfterMoveAndOpen < 0)
                 {
                     continue;
                 }
 
-                var updatedRelease = AddPressureReleased(distance);
+                // Add pressure for moving and while opening
+                var updatedRelease = AddPressureReleased(distance + 1);
+
+                // Then open and add that flow
+                valveStates[neighbor.Index] = 'O';
+                currentFlow += neighbor.FlowRate;
 
                 maxPressurePossibleFromHere = Math.Max(maxPressurePossibleFromHere,
-                                                       GetMaxPressureReleased(openValves,
-                                                                              openValvesString,
+                                                       GetMaxPressureReleased(valveStates,
                                                                               neighbor,
-                                                                              minutesAfterMoving,
+                                                                              minutesAfterMoveAndOpen,
+                                                                              currentFlow,
                                                                               updatedRelease));
+
+                // Undo our changes
+                valveStates[neighbor.Index] = 'X';
+                currentFlow -= neighbor.FlowRate;
             }
 
-            memo[scenarioCode] = maxPressurePossibleFromHere;
             return maxPressurePossibleFromHere;
-        }
-
-        private string GetScenarioCode(string openValvesString,
-                                       Valve currentValve,
-                                       int minutesRemaining)
-        {
-            // var openValvesCode = $"O{string.Join("|", openValves.Select(x => $"{x.Item1.Name}-{x.Item2}"))}";
-
-            return $"{openValvesString}C{currentValve.Name}M{minutesRemaining}";
         }
 
         protected override async Task<string> SolvePartTwoInternal()
@@ -188,6 +161,8 @@ namespace PuzzleDays
 
             var valveRegex = new Regex("Valve (.*) has flow rate=(\\d+); tunnels? leads? to valves? (.*)");
 
+            var valveIndex = 0;
+
             foreach (var line in lines)
             {
                 var valveMatch = valveRegex.Match(line);
@@ -197,6 +172,7 @@ namespace PuzzleDays
 
                 var newValve = new Valve
                                {
+                                   Index = valveIndex++,
                                    Name = valveMatch.Groups[1]
                                                     .Value,
                                    FlowRate = int.Parse(valveMatch.Groups[2]
@@ -228,6 +204,8 @@ namespace PuzzleDays
 [DebuggerDisplay("{Name} ({FlowRate}) ({IsOpen})")]
 class Valve
 {
+    public int Index {get; init; }
+
     public string Name { get; init; }
 
     public bool IsOpen { get; set; }
