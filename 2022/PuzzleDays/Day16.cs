@@ -89,6 +89,7 @@ namespace PuzzleDays
             if (minutesRemaining <= 0)
             {
                 memo[scenarioCode] = currentPressureReleased;
+
                 return currentPressureReleased;
             }
 
@@ -102,9 +103,10 @@ namespace PuzzleDays
             // Can skip a lot of empty steps once we get all valves open
             if (openValves.Count == valvesToOpen)
             {
-                var bestPressureFromHere = openValves.Sum(x => x.FlowRate) * minutesRemaining;
+                var bestPressureFromHere = currentPressureReleased + (openValves.Sum(x => x.FlowRate) * minutesRemaining);
 
-                memo[scenarioCode] = currentPressureReleased + bestPressureFromHere;
+                memo[scenarioCode] = bestPressureFromHere;
+
                 return bestPressureFromHere;
             }
 
@@ -141,6 +143,13 @@ namespace PuzzleDays
                 }
 
                 var minutesAfterMoving = minutesRemaining - distance;
+
+                // Invalid to move to negative time remaining
+                if (minutesAfterMoving < 0)
+                {
+                    continue;
+                }
+
                 var updatedRelease = AddPressureReleased(distance);
 
                 maxPressurePossibleFromHere = Math.Max(maxPressurePossibleFromHere,
