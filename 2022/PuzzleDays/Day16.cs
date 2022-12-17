@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text.RegularExpressions;
 
+using Helpers.Extensions;
 using Helpers.FileReaders;
 using Helpers.Heaps;
 using Helpers.Structure;
@@ -45,6 +46,12 @@ namespace PuzzleDays
                     }
                 }
 
+                if (valve.Name == "AA")
+                {
+                    distanceFromStart = distance.ToDictionary(x => x.Key,
+                                                              x => x.Value);
+                }
+
                 // Save the distance from this node to all the other valves that have a flow rate
                 valve.OptimizedDistanceMap = distance.Where(x => valves[x.Key]
                                                                      .FlowRate
@@ -53,6 +60,9 @@ namespace PuzzleDays
                                                      .ToDictionary(x => x.Key,
                                                                    x => x.Value);
             }
+
+            nonZeroValves = valves.Values.Where(x => x.FlowRate > 0)
+                                  .ToList();
 
             // X == closed
             // O == open
@@ -76,7 +86,11 @@ namespace PuzzleDays
             return result.ToString();
         }
 
+        private Dictionary<string, int> distanceFromStart;
+
         private int maxFlow;
+
+        private List<Valve> nonZeroValves;
 
         private int GetMaxPressureReleased(char[] valveStates,
                                            Valve currentValve,
@@ -146,9 +160,112 @@ namespace PuzzleDays
             return maxPressurePossibleFromHere;
         }
 
+        private IEnumerable<List<Valve>> GenerateOpeningPaths(Valve currentPosition, List<Valve> openValves, int timeRemaining)
+        {
+            var options = new List<List<Valve>>();
+
+            foreach (var nextValve in nonZeroValves)
+            {
+                if (currentPosition == nextValve
+                    || openValves.Contains(nextValve))
+                {
+                    continue;
+                }
+
+                var timeRequired = currentPosition.OptimizedDistanceMap[nextValve.Name] + 1;
+
+                if (timeRequired < timeRemaining)
+                {
+                    openValves.Add(nextValve);
+
+                    options.Add(openValves.ToList());
+
+                    options.AddRange(GenerateOpeningPaths(nextValve,
+                                                          openValves,
+                                                          timeRemaining - timeRequired));
+                    openValves.Remove(nextValve);
+                }
+            }
+
+            return options;
+        }
+
+        private int GetPressureReleasedForOrder(List<Valve> openingOrder, int timeLeft)
+        {
+            var distanceMap = distanceFromStart;
+
+            var score = 0;
+
+            foreach (var valve in openingOrder)
+            {
+                timeLeft -= (distanceMap[valve.Name] + 1);
+                score += valve.FlowRate * timeLeft;
+                distanceMap = valve.OptimizedDistanceMap;
+            }
+
+            return score;
+        }
+
         protected override async Task<string> SolvePartTwoInternal()
         {
-            throw new NotImplementedException();
+            // Get every permutation of orders a single actor could open the valves in, starting at AA with 26 min left
+            // From opening none to opening all (if there is enough time)
+            var openOrders = GenerateOpeningPaths(valves["AA"],
+                                                  new List<Valve>(),
+                                                  26)
+                .ToList();
+
+            // For each set of valves that we open with a given order (i.e. opening 4 of X)
+            var bestOrderForSubsetOfValves = new Dictionary<string, (HashSet<Valve>, int)>();
+
+            // Find and store the best order to open in for that set
+            foreach (var order in openOrders)
+            {
+                var hash = order.ToHashSet();
+
+                var score = GetPressureReleasedForOrder(order,
+                                                        26);
+
+                var valves = string.Join(",",
+                                         order.Select(x => x.Name).OrderBy(x => x));
+
+                bestOrderForSubsetOfValves[valves] = (hash, Math.Max(bestOrderForSubsetOfValves.GetValueOrDefault(valves,
+                                                                                                                  (hash, 0))
+                                                                                               .Item2,
+                                                                     score));
+            }
+
+            var result = 0;
+
+            var openingOptions = bestOrderForSubsetOfValves.Values.OrderByDescending(x => x.Item2).ToList();
+
+            // Iterate through options of valves you open
+            for (var yourIndex = 0; yourIndex < openingOptions.Count - 1; yourIndex++)
+            {
+                var (yourValves, yourScore) = openingOptions[yourIndex];
+
+                if (yourScore + openingOptions[yourIndex + 1].Item2 < result)
+                {
+                    // Fast exit if we can't beat our best score so far with any remaining options
+                    continue;
+                }
+
+                // And ones the elephant opens
+                for (var elephantIndex = yourIndex + 1; elephantIndex < openingOptions.Count; elephantIndex++)
+                {
+                    var (elephantValves, elephantScore) = openingOptions[elephantIndex];
+
+                    // If the two sets have no overlap this is a possible solution
+                    if (!elephantValves.Intersect(yourValves).Any())
+                    {
+                        // Might not actually need math.max here since we have the other guard above
+                        result = Math.Max(result,
+                                          yourScore + elephantScore);
+                    }
+                }
+            }
+
+            return result.ToString();
         }
 
         public override async Task ReadInput()
@@ -199,6 +316,13 @@ namespace PuzzleDays
 
         private Dictionary<string, Valve> valves;
     }
+}
+
+class Target
+{
+    public Valve Valve { get; set; }
+
+    public int Distance { get; set; }
 }
 
 [DebuggerDisplay("{Name} ({FlowRate}) ({IsOpen})")]
