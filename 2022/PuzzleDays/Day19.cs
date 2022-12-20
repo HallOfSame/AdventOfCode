@@ -106,11 +106,15 @@ namespace PuzzleDays
                     continue;
                 }
 
-                current = current.Update(timeRemaining: updatedTime);
+                current = current.Update(currentMinute: updatedTime);
 
-                // Build every type of robot if possible
+                // Build every type of robot if it makes sense to
+                // If we don't have enough resources, simulate waiting until we do
                 foreach (var type in robotTypes)
                 {
+                    // Don't consider this type if it doesn't make sense
+                    // Either A: we could never get the resources to construct it (i.e. needs clay and we have no clay producers)
+                    // Or B: we could never actually use the resources it would provide due to: time remaining, max of the resource we could need, and stockpile / existing bots producing that resource
                     if (!factory.ShouldConstruct(type,
                                                  current,
                                                  currentTimeRemaining))
@@ -141,18 +145,33 @@ namespace PuzzleDays
 
                     var updated = factory.BeginConstruction(type,
                                                             current);
+
+                    // Do additional mining if we needed to wait to build this type
+                    // This is simulating (after the fact) previous rounds of waiting until we had enough resources
+                    var extraMinutesRequired = 0;
+
+                    while (updated.Ore < 0
+                           || updated.Clay < 0
+                           || updated.Obsidian < 0)
+                    {
+                        extraMinutesRequired++;
+                        updated = factory.Mine(updated);
+                    }
+
+                    // Do the normal mining for this turn
                     updated = factory.Mine(updated);
-                    updated = factory.EndConstruction(type,
-                                                      updated,
-                                                      currentTimeRemaining);
 
-                    stateQueue.Enqueue(updated);
+                    // Only enqueue if we had time left
+                    // This prevents adding negative geodes, not sure it even matters to have this check
+                    if (currentTimeRemaining - extraMinutesRequired > 0)
+                    {
+                        updated = factory.EndConstruction(type,
+                                                          updated,
+                                                          currentTimeRemaining - extraMinutesRequired);
+                        updated = updated.Update(currentMinute: updated.CurrentMinute + extraMinutesRequired);
+                        stateQueue.Enqueue(updated);
+                    }
                 }
-
-                // Simulate just mining this turn
-                var miningOnly = factory.Mine(current);
-
-                stateQueue.Enqueue(miningOnly);
             }
 
             return maxGeodes;
@@ -160,6 +179,10 @@ namespace PuzzleDays
 
         private Dictionary<int, int> cache = new();
 
+        /// <summary>
+        /// Find the amount of geodes we could product in <paramref name="minutes"/> time assuming we built a geode bot every turn after this.
+        /// This is a very generous upper bound but still can help
+        /// </summary>
         private int GetRemainingGeodesPossible(int minutes)
         {
             if (cache.TryGetValue(minutes,
@@ -226,7 +249,7 @@ public static class StateExtensions
                                       int? clay = null,
                                       int? obsidian = null,
                                       int? geodes = null,
-                                      int? timeRemaining = null)
+                                      int? currentMinute = null)
     {
         return new FactoryState(oreRobots ?? state.OreRobots,
                                 clayRobots ?? state.ClayRobots,
@@ -235,7 +258,7 @@ public static class StateExtensions
                                 clay ?? state.Clay,
                                 obsidian ?? state.Obsidian,
                                 geodes ?? state.Geodes,
-                                timeRemaining ?? state.CurrentMinute);
+                                currentMinute ?? state.CurrentMinute);
     }
 }
 
@@ -302,17 +325,17 @@ class Factory
 
     public bool ShouldConstruct(RobotType robotType, FactoryState state, int timeRemaining)
     {
-        var materialCheck = robotType switch
+        var producerCheck = robotType switch
         {
-            RobotType.Ore => state.Ore >= Blueprint.OreRobotCost,
-            RobotType.Clay => state.Ore >= Blueprint.ClayRobotCost,
-            RobotType.Obsidian => state.Ore >= Blueprint.ObsidianRobotCost.ore && state.Clay >= Blueprint.ObsidianRobotCost.clay,
-            RobotType.Geode => state.Ore >= Blueprint.GeodeRobotCost.ore && state.Obsidian >= Blueprint.GeodeRobotCost.obsidian,
+            RobotType.Ore => state.OreRobots > 0,
+            RobotType.Clay => state.OreRobots > 0,
+            RobotType.Obsidian => state.OreRobots > 0 && state.ClayRobots > 0,
+            RobotType.Geode => state.OreRobots > 0 && state.ObsidianRobots > 0,
             _ => throw new ArgumentException(nameof(robotType))
         };
 
-        // We can't if we don't have the materials
-        if (!materialCheck)
+        // We can't if we don't have the producers needed to make the requirements
+        if (!producerCheck)
         {
             return false;
         }
