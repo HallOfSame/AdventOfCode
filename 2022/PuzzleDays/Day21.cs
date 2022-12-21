@@ -14,14 +14,17 @@ namespace PuzzleDays
     {
         protected override async Task<string> SolvePartOneInternal()
         {
-            var result = Expression.Lambda<Func<long>>(root)
-                                   .Compile()();
+            var result = Expression.Lambda<Func<long, long>>(root,
+                                                             human)
+                                   .Compile()(humanValue);
 
             return result.ToString();
         }
 
         protected override async Task<string> SolvePartTwoInternal()
         {
+            var variableDirectionStack = new Stack<char>();
+
             throw new NotImplementedException();
         }
 
@@ -42,8 +45,15 @@ namespace PuzzleDays
                 var expression = split[1]
                     .Trim();
 
-                if (long.TryParse(expression,
-                                  out var constant))
+                if (monkeyName == "humn")
+                {
+                    human = Expression.Parameter(typeof(long),
+                                                 humanVariableName);
+                    expressions[monkeyName] = human;
+                    humanValue = long.Parse(expression);
+                }
+                else if (long.TryParse(expression,
+                                       out var constant))
                 {
                     expressions[monkeyName] = Expression.Constant(constant);
                 }
@@ -93,5 +103,11 @@ namespace PuzzleDays
         }
 
         private Expression root;
+
+        private ParameterExpression human;
+
+        private long humanValue;
+
+        private const string humanVariableName = "humnVar";
     }
 }
