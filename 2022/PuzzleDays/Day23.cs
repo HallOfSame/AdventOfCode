@@ -11,6 +11,8 @@ namespace PuzzleDays
     {
         protected override async Task<string> SolvePartOneInternal()
         {
+            var decisions = decisionsStart.ToArray();
+
             var map = startingPositions.Select(x => (Coordinate)x.Clone())
                                        .ToHashSet();
 
@@ -123,7 +125,9 @@ namespace PuzzleDays
 
         protected override async Task<string> SolvePartTwoInternal()
         {
-                        var map = startingPositions.Select(x => (Coordinate)x.Clone())
+            var decisions = decisionsStart.ToArray();
+
+            var map = startingPositions.Select(x => (Coordinate)x.Clone())
                                        .ToHashSet();
 
             //Console.WriteLine("Initial state");
@@ -132,7 +136,7 @@ namespace PuzzleDays
 
             var round = 0;
 
-            while(true)
+            while (true)
             {
                 round++;
 
@@ -226,6 +230,7 @@ namespace PuzzleDays
                                      .Concat(decisions.Take(1))
                                      .ToArray();
 
+
                 //Console.WriteLine($"End of round {round}");
                 //map.Draw(_ => "#",
                 //         forceOrigin: true);
@@ -262,7 +267,7 @@ namespace PuzzleDays
 
         private HashSet<Coordinate> startingPositions = new();
 
-        private Decision[] decisions =
+        private Decision[] decisionsStart =
         {
             new Decision
             {
