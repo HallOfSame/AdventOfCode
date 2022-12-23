@@ -123,7 +123,120 @@ namespace PuzzleDays
 
         protected override async Task<string> SolvePartTwoInternal()
         {
-            throw new NotImplementedException();
+                        var map = startingPositions.Select(x => (Coordinate)x.Clone())
+                                       .ToHashSet();
+
+            //Console.WriteLine("Initial state");
+            //map.Draw(_ => "#",
+            //         forceOrigin: true);
+
+            var round = 0;
+
+            while(true)
+            {
+                round++;
+
+                var unmovedElves = new HashSet<Coordinate>();
+
+                // Key == new location
+                // Value == list of elves planning to move there
+                var locationProposals = new Dictionary<Coordinate, List<Coordinate>>();
+
+                // Part one of round -> determine proposed moves
+                foreach (var elf in map)
+                {
+                    var neighbors = elf.GetNeighbors(true);
+
+                    var shouldMove = neighbors.Any(x => map.Contains(x));
+
+                    bool DecisionInvalid(Decision decision)
+                    {
+                        return map.Contains(neighbors[(int)decision.CheckOne]) || map.Contains(neighbors[(int)decision.CheckTwo]) || map.Contains(neighbors[(int)decision.CheckThree]);
+                    }
+
+                    var madeMove = false;
+
+                    if (shouldMove)
+                    {
+
+                        foreach (var decision in decisions)
+                        {
+                            if (DecisionInvalid(decision))
+                            {
+                                continue;
+                            }
+
+                            madeMove = true;
+
+                            var updatedLocation = neighbors[(int)decision.MoveDirection];
+
+                            if (!locationProposals.TryGetValue(updatedLocation,
+                                                               out var existingList))
+                            {
+                                locationProposals[updatedLocation] = new List<Coordinate>
+                                                                     {
+                                                                         elf
+                                                                     };
+                            }
+                            else
+                            {
+                                existingList.Add(elf);
+                            }
+
+                            break;
+                        }
+                    }
+
+                    if (!madeMove)
+                    {
+                        unmovedElves.Add(elf);
+                    }
+                }
+
+                // Part two execute moves
+                var updatedMap = unmovedElves;
+
+                var hadMove = false;
+
+                foreach (var (newLocation, proposedMovers) in locationProposals)
+                {
+                    if (proposedMovers.Count == 1)
+                    {
+                        // Only one elf wants to move here, allow the move
+                        updatedMap.Add(newLocation);
+
+                        hadMove = true;
+                    }
+                    else
+                    {
+                        // Multiple elves plan to move here, move none of them
+                        proposedMovers.ForEach(x => updatedMap.Add(x));
+                    }
+
+                    map = updatedMap;
+                }
+
+                if (!hadMove)
+                {
+                    break;
+                }
+
+                // Rotate the decision order
+                decisions = decisions.Skip(1)
+                                     .Concat(decisions.Take(1))
+                                     .ToArray();
+
+                //Console.WriteLine($"End of round {round}");
+                //map.Draw(_ => "#",
+                //         forceOrigin: true);
+            }
+
+            if (round == 1139)
+            {
+                throw new Exception("Too high");
+            }
+
+            return round.ToString();
         }
 
         public override async Task ReadInput()
