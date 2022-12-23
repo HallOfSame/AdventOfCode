@@ -21,28 +21,28 @@ namespace Helpers.Extensions
                                                ? 8
                                                : 4];
 
-            neighbors[0] = new Coordinate(startX - 1,
-                                          startY);
-            neighbors[1] = new Coordinate(startX + 1,
-                                          startY);
-            neighbors[2] = new Coordinate(startX,
-                                          startY - 1);
-            neighbors[3] = new Coordinate(startX,
-                                          startY + 1);
+            neighbors[(int)Direction.West] = new Coordinate(startX - 1,
+                                                             startY);
+            neighbors[(int)Direction.East] = new Coordinate(startX + 1,
+                                                            startY);
+            neighbors[(int)Direction.South] = new Coordinate(startX,
+                                                             startY - 1);
+            neighbors[(int)Direction.North] = new Coordinate(startX,
+                                                             startY + 1);
 
             if (!includeDiagonals)
             {
                 return neighbors.ToList();
             }
 
-            neighbors[4] = new Coordinate(startX - 1,
-                                          startY - 1);
-            neighbors[5] = new Coordinate(startX - 1,
-                                          startY + 1);
-            neighbors[6] = new Coordinate(startX + 1,
-                                          startY - 1);
-            neighbors[7] = new Coordinate(startX + 1,
-                                          startY + 1);
+            neighbors[(int)Direction.SouthWest] = new Coordinate(startX - 1,
+                                                                 startY - 1);
+            neighbors[(int)Direction.NorthWest] = new Coordinate(startX - 1,
+                                                                 startY + 1);
+            neighbors[(int)Direction.SouthEast] = new Coordinate(startX + 1,
+                                                                 startY - 1);
+            neighbors[(int)Direction.NorthEast] = new Coordinate(startX + 1,
+                                                                 startY + 1);
 
             return neighbors.ToList();
         }
@@ -50,7 +50,8 @@ namespace Helpers.Extensions
         public static void Draw(this IEnumerable<Coordinate> coordinates,
                                 Func<Coordinate, string> drawAction,
                                 string originMarker = "O",
-                                string emptySpace = ".")
+                                string emptySpace = ".",
+                                bool forceOrigin = false)
         {
             var coordinateSet = coordinates.ToHashSet();
 
@@ -59,6 +60,14 @@ namespace Helpers.Extensions
 
             var minY = coordinates.Min(y => y.Y) - 1;
             var maxY = coordinates.Max(y => y.Y) + 1;
+
+            if (forceOrigin)
+            {
+                minX = Math.Min(minX,
+                                0);
+                minY = Math.Min(minY,
+                                0);
+            }
 
             var sb = new StringBuilder();
 

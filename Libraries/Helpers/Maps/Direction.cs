@@ -8,6 +8,14 @@
 
         East,
 
-        West
+        West,
+
+        NorthWest,
+
+        NorthEast,
+
+        SouthWest,
+
+        SouthEast,
     }
 }
