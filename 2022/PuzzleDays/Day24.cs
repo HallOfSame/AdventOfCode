@@ -247,8 +247,80 @@ namespace PuzzleDays
         }
 
         protected override async Task<string> SolvePartTwoInternal()
-        {
-            throw new NotImplementedException();
+        { 
+            var queue = new SimplePriorityQueue<(Coordinate expedition, int minute), int>();
+
+            queue.Enqueue((start, 0),
+                          0);
+
+            var goals = new Stack<Coordinate>();
+            goals.Push(end);
+            goals.Push(start);
+            goals.Push(end);
+
+            while (queue.Count > 0)
+            {
+                var (currentLoc, currentMinute) = queue.Dequeue();
+
+                var currentGoal = goals.Peek();
+
+                if (currentLoc == currentGoal)
+                {
+                    goals.Pop();
+
+                    if (goals.Count == 0)
+                    {
+                        return currentMinute.ToString();
+                    }
+
+                    queue.Clear();
+                    queue.Enqueue((currentGoal, currentMinute + 1),
+                                  0);
+                }
+
+                var newTime = currentMinute + 1;
+
+                var blizzardsAtNextMove = GetBlizzardsAtMinute(newTime);
+
+                var neighbors = currentLoc.GetNeighbors();
+
+                // Wall check handles everything except trying to move north from the start position
+                // That's what the max Y check is for and the min check for when we end up at end and go back
+                var validNeighbors = neighbors.Where(x => !walls.Contains(x) && x.Y <= maxY + 1 && x.Y >= 0);
+
+                validNeighbors = validNeighbors.Where(x => !blizzardsAtNextMove.ContainsKey(x));
+
+                int GetNewPriority(Coordinate newPosition)
+                {
+                    return (newTime * 1000)
+                           + CoordinateHelper.ManhattanDistance(newPosition,
+                                                                currentGoal);
+                }
+
+                void AddToQueue(Coordinate newPosition)
+                {
+                    var prio = GetNewPriority(newPosition);
+
+                    if (!queue.EnqueueWithoutDuplicates((newPosition, newTime),
+                                                        prio))
+                    {
+                        queue.UpdatePriority((newPosition, newTime),
+                                             prio);
+                    }
+                }
+
+                foreach (var neighbor in validNeighbors)
+                {
+                    AddToQueue(neighbor);
+                }
+
+                if (!blizzardsAtNextMove.ContainsKey(currentLoc))
+                {
+                    AddToQueue(currentLoc);
+                }
+            }
+
+            throw new Exception("Did not reach goal");
         }
 
         public override async Task ReadInput()
