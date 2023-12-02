@@ -24,7 +24,20 @@ public class Day02 : ProblemBase
 
     protected override async Task<string> SolvePartTwoInternal()
     {
-        throw new NotImplementedException();
+        var totalSum = 0m;
+
+        foreach (var result in gameResults)
+        {
+            var redNeeded = result.RevealedSets.Max(set => set.RedCount);
+            var blueNeeded = result.RevealedSets.Max(set => set.BlueCount);
+            var greenNeeded = result.RevealedSets.Max(set => set.GreenCount);
+
+            var power = redNeeded * blueNeeded * greenNeeded;
+
+            totalSum += power;
+        }
+
+        return totalSum.ToString();
     }
 
     public override async Task ReadInput()
