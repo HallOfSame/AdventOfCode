@@ -9,68 +9,11 @@ public class Day03 : ProblemBase
 {
     private readonly List<PartNumber> partNumbers = new();
     private Dictionary<Coordinate, char> coordinates;
+    private readonly List<Coordinate> gearCandidates = new();
+    private readonly List<PartNumber> partNumberCandidates = new();
 
     protected override async Task<string> SolvePartOneInternal()
     {
-        var startOfPartNumbers = coordinates.Where(x =>
-        {
-            var isDigit = char.IsDigit(x.Value);
-
-            if (!isDigit)
-            {
-                return false;
-            }
-
-            var leftSpace = x.Key.X - 1;
-
-            if (leftSpace < 0)
-            {
-                // Is a digit and nothing to the left
-                return true;
-            }
-
-            return !char.IsDigit(coordinates[new Coordinate(leftSpace, x.Key.Y)]);
-        }).ToList();
-
-        var partNumberCandidates = new List<PartNumber>();
-
-        foreach (var startOfPartNumber in startOfPartNumbers)
-        {
-            var partNumber = "" + startOfPartNumber.Value;
-
-            var currentCoordinate = startOfPartNumber.Key;
-
-            var partCoordinates = new List<Coordinate>
-            {
-                currentCoordinate
-            };
-
-            do
-            {
-                var nextCoordinate = new Coordinate(currentCoordinate.X + 1, currentCoordinate.Y);
-
-                if (!coordinates.TryGetValue(nextCoordinate, out var nextChar))
-                {
-                    break;
-                }
-
-                if (!char.IsDigit(nextChar))
-                {
-                    break;
-                }
-
-                partNumber += nextChar;
-                partCoordinates.Add(nextCoordinate);
-                currentCoordinate = nextCoordinate;
-            } while (true);
-
-            partNumberCandidates.Add(new PartNumber
-            {
-                NumberDigits = partCoordinates,
-                PartNumberValue = int.Parse(partNumber)
-            });
-        }
-
         var sum = 0;
 
         foreach (var candidate in partNumberCandidates)
@@ -91,13 +34,11 @@ public class Day03 : ProblemBase
 
     protected override async Task<string> SolvePartTwoInternal()
     {
-        var gearCandidates = coordinates.Where(x => x.Value == '*');
-
         var gearRatioSum = 0m;
 
         foreach (var candidate in gearCandidates)
         {
-            var gearNeighbors = candidate.Key.GetNeighbors(true)
+            var gearNeighbors = candidate.GetNeighbors(true)
                 .ToHashSet();
 
             var connectedPartNumbers = partNumbers
@@ -127,12 +68,55 @@ public class Day03 : ProblemBase
 
         coordinates = new Dictionary<Coordinate, char>();
 
-        for (var x = 0; x < width; x++)
+        var currentDigitString = string.Empty;
+        var currentDigitCoordinates = new List<Coordinate>(3);
+
         for (var y = 0; y < strings.Count; y++)
         {
-            var value = strings[y][x];
+            for (var x = 0; x < width; x++)
+            {
+                var value = strings[y][x];
 
-            coordinates.Add(new Coordinate(x, y), value);
+                var coord = new Coordinate(x, y);
+
+                if (value == '*')
+                {
+                    gearCandidates.Add(coord);
+                }
+
+                if (char.IsDigit(value))
+                {
+                    currentDigitString += value;
+                    currentDigitCoordinates.Add(coord);
+                }
+                else if (currentDigitString.Length != 0)
+                {
+                    partNumberCandidates.Add(new PartNumber
+                    {
+                        PartNumberValue = int.Parse(currentDigitString),
+                        NumberDigits = currentDigitCoordinates.ToList(),
+                    });
+
+                    currentDigitString = string.Empty;
+                    currentDigitCoordinates.Clear();
+                }
+
+                coordinates.Add(new Coordinate(x, y), value);
+            }
+
+            if (currentDigitString.Length == 0)
+            {
+                continue;
+            }
+
+            partNumberCandidates.Add(new PartNumber
+            {
+                PartNumberValue = int.Parse(currentDigitString),
+                NumberDigits = currentDigitCoordinates.ToList(),
+            });
+
+            currentDigitString = string.Empty;
+            currentDigitCoordinates.Clear();
         }
     }
 
