@@ -7,6 +7,7 @@ namespace PuzzleDays;
 
 public class Day03 : ProblemBase
 {
+    private readonly List<PartNumber> partNumbers = new();
     private Dictionary<Coordinate, char> coordinates;
 
     protected override async Task<string> SolvePartOneInternal()
@@ -15,13 +16,18 @@ public class Day03 : ProblemBase
         {
             var isDigit = char.IsDigit(x.Value);
 
-            if (!isDigit) return false;
+            if (!isDigit)
+            {
+                return false;
+            }
 
             var leftSpace = x.Key.X - 1;
 
             if (leftSpace < 0)
+            {
                 // Is a digit and nothing to the left
                 return true;
+            }
 
             return !char.IsDigit(coordinates[new Coordinate(leftSpace, x.Key.Y)]);
         }).ToList();
@@ -43,9 +49,15 @@ public class Day03 : ProblemBase
             {
                 var nextCoordinate = new Coordinate(currentCoordinate.X + 1, currentCoordinate.Y);
 
-                if (!coordinates.TryGetValue(nextCoordinate, out var nextChar)) break;
+                if (!coordinates.TryGetValue(nextCoordinate, out var nextChar))
+                {
+                    break;
+                }
 
-                if (!char.IsDigit(nextChar)) break;
+                if (!char.IsDigit(nextChar))
+                {
+                    break;
+                }
 
                 partNumber += nextChar;
                 partCoordinates.Add(nextCoordinate);
@@ -68,7 +80,10 @@ public class Day03 : ProblemBase
             if (neighborsToCheck.Any(x =>
                     coordinates.TryGetValue(x, out var neighborChar) && !char.IsDigit(neighborChar) &&
                     neighborChar != '.'))
+            {
                 sum += candidate.PartNumberValue;
+                partNumbers.Add(candidate);
+            }
         }
 
         return sum.ToString();
@@ -76,7 +91,32 @@ public class Day03 : ProblemBase
 
     protected override async Task<string> SolvePartTwoInternal()
     {
-        throw new NotImplementedException();
+        var gearCandidates = coordinates.Where(x => x.Value == '*');
+
+        var gearRatioSum = 0m;
+
+        foreach (var candidate in gearCandidates)
+        {
+            var gearNeighbors = candidate.Key.GetNeighbors(true)
+                .ToHashSet();
+
+            var connectedPartNumbers = partNumbers
+                .Where(partNum => partNum.NumberDigits.Any(numCoord => gearNeighbors.Contains(numCoord)))
+                .ToList();
+
+            if (connectedPartNumbers.Count != 2)
+            {
+                continue;
+            }
+
+            var thisRatio = connectedPartNumbers[0]
+                .PartNumberValue * connectedPartNumbers[1]
+                .PartNumberValue;
+
+            gearRatioSum += thisRatio;
+        }
+
+        return gearRatioSum.ToString();
     }
 
     public override async Task ReadInput()
