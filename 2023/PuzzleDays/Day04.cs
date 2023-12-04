@@ -12,14 +12,21 @@ namespace PuzzleDays
     {
         protected override async Task<string> SolvePartOneInternal()
         {
-            return scratchcards.Select(GetScratchcardScore)
+            return scratchcards.Select(GetScratchcardPointScore)
                 .Sum()
                 .ToString();
         }
 
         protected override async Task<string> SolvePartTwoInternal()
         {
-            throw new NotImplementedException();
+            var copies = new Dictionary<int, int>();
+
+            foreach (var card in scratchcards)
+            {
+                CalculateCopies(card, copies);
+            }
+
+            return (scratchcards.Count + copies.Values.Sum()).ToString();
         }
 
         public override async Task ReadInput()
@@ -27,7 +34,31 @@ namespace PuzzleDays
             scratchcards = await new ScratchcardReader().ReadInputFromFile();
         }
 
-        private int GetScratchcardScore(Scratchcard scratchcard)
+        private void CalculateCopies(Scratchcard currentCard, Dictionary<int, int> copies)
+        {
+            var matchingNumbers = currentCard.YourNumbers.Count(num => currentCard.WinningNumbers.Contains(num));
+
+            copies.TryGetValue(currentCard.CardNumber, out var instancesOfCurrentCard);
+
+            // Include the 1 original card
+            instancesOfCurrentCard += 1;
+
+            for (var i = 1; i <= matchingNumbers; i++)
+            {
+                var copyIndex = currentCard.CardNumber + i;
+
+                if (!copies.TryGetValue(copyIndex, out var currentCopies))
+                {
+                    copies[copyIndex] = instancesOfCurrentCard;
+                }
+                else
+                {
+                    copies[copyIndex] = currentCopies + instancesOfCurrentCard;
+                }
+            }
+        }
+
+        private int GetScratchcardPointScore(Scratchcard scratchcard)
         {
             var matchingNumbers = scratchcard.YourNumbers.Count(num => scratchcard.WinningNumbers.Contains(num));
 
@@ -38,6 +69,8 @@ namespace PuzzleDays
 
         class Scratchcard
         {
+            public int CardNumber { get; set; }
+
             public HashSet<int> WinningNumbers { get; set; }
 
             public HashSet<int> YourNumbers { get; set; }
@@ -47,7 +80,12 @@ namespace PuzzleDays
         {
             protected override Scratchcard ProcessLineOfFile(string line)
             {
-                var numberSide = line.Split(": ")[1];
+                var lineSplit = line.Split(": ");
+
+                var cardNumber = int.Parse(lineSplit[0]
+                    .Replace("Card ", string.Empty));
+
+                var numberSide = lineSplit[1];
 
                 var numberSplit = numberSide.Split(" | ");
 
@@ -65,6 +103,7 @@ namespace PuzzleDays
 
                 return new Scratchcard
                 {
+                    CardNumber = cardNumber,
                     WinningNumbers = winningNumbers,
                     YourNumbers = yourNumbers,
                 };
