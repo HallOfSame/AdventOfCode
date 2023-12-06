@@ -13,15 +13,15 @@ namespace PuzzleDays
         protected override async Task<string> SolvePartOneInternal()
         {
             return races.Select(GetWaysToWinRace)
-                .Aggregate(1, (agg, next) => agg * next)
+                .Aggregate(1L, (agg, next) => agg * next)
                 .ToString();
         }
 
-        private int GetWaysToWinRace(Race race)
+        private long GetWaysToWinRace(Race race)
         {
             // Making a guess / assumption here that the amount of time to hold the button is continuous
             // So we can just search for the min & max values of time where holding the button beats the record
-            var lowestWinningHoldTime = default(int?);
+            var lowestWinningHoldTime = default(long?);
 
             for (var holdTime = 1; holdTime < race.Time; holdTime++)
             {
@@ -35,7 +35,7 @@ namespace PuzzleDays
                 }
             }
 
-            var highestWinningHoldTime = default(int?);
+            var highestWinningHoldTime = default(long?);
 
             for (var holdTime = race.Time - 1; holdTime > 0; holdTime--)
             {
@@ -59,7 +59,15 @@ namespace PuzzleDays
 
         protected override async Task<string> SolvePartTwoInternal()
         {
-            throw new NotImplementedException();
+            var actualTime = long.Parse(races.Select(x => x.Time).Aggregate(string.Empty, (agg, val) => agg + val));
+            var actualDistance = long.Parse(races.Select(x => x.DistanceRecord).Aggregate(string.Empty, (agg, val) => agg + val));
+
+            return GetWaysToWinRace(new Race
+                {
+                    Time = actualTime,
+                    DistanceRecord = actualDistance,
+                })
+                .ToString();
         }
 
         public override async Task ReadInput()
@@ -96,9 +104,9 @@ namespace PuzzleDays
 
         class Race
         {
-            public int Time { get; set; }
+            public long Time { get; set; }
 
-            public int DistanceRecord { get; set; }
+            public long DistanceRecord { get; set; }
         }
     }
 }
