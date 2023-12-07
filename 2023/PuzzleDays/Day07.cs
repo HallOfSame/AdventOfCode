@@ -13,9 +13,9 @@ namespace PuzzleDays
         protected override async Task<string> SolvePartOneInternal()
         {
             // Didn't want this in the input read because it's kind of solving the puzzle
-            hands.ForEach(SetHandType);
+            hands.ForEach(h => h.HandType = GetHandType(h.Cards));
 
-            var orderedHands = hands.OrderByDescending(x => x, new HandComparer())
+            var orderedHands = hands.OrderByDescending(x => x, new HandComparer(false))
                 .ToList();
 
             var scores = orderedHands.Select((x, idx) => x.Bid * (orderedHands.Count - idx));
@@ -26,54 +26,87 @@ namespace PuzzleDays
             return result;
         }
 
-        private void SetHandType(Hand h)
+        private HandType GetHandType(Card[] cards)
         {
-            var cardCounts = h.Cards.GroupBy(x => x)
+            var cardCounts = cards.GroupBy(x => x)
                 .ToArray();
 
             if (cardCounts.Length == 1)
             {
-                h.HandType = HandType.FiveOfAKind;
-                return;
+                return HandType.FiveOfAKind;
             }
 
             if (cardCounts.Length == 2)
             {
                 if (cardCounts.Any(x => x.Count() == 4))
                 {
-                    h.HandType = HandType.FourOfAKind;
-                    return;
+                    return HandType.FourOfAKind;
                 }
 
-                h.HandType = HandType.FullHouse;
-                return;
+                return HandType.FullHouse;
             }
 
             if (cardCounts.Length == 3)
             {
                 if (cardCounts.Any(x => x.Count() == 3))
                 {
-                    h.HandType = HandType.ThreeOfAKind;
-                    return;
+                    return HandType.ThreeOfAKind;
                 }
 
-                h.HandType = HandType.TwoPair;
-                return;
+                return HandType.TwoPair;
             }
 
             if (cardCounts.Length == 4)
             {
-                h.HandType = HandType.OnePair;
+                return HandType.OnePair;
             }
-            else
-            {
-                h.HandType = HandType.HighCard;
-            }
+            
+            return HandType.HighCard;
         }
 
         protected override async Task<string> SolvePartTwoInternal()
         {
-            throw new NotImplementedException();
+            hands.ForEach(h => h.HandType = GetHandTypeForPart2(h));
+
+            var orderedHands = hands.OrderByDescending(x => x, new HandComparer(true))
+                .ToList();
+
+            var scores = orderedHands.Select((x, idx) => x.Bid * (orderedHands.Count - idx));
+
+            var sum = scores.Sum();
+
+            var result = sum
+                .ToString();
+
+            return result;
+        }
+
+        private HandType GetHandTypeForPart2(Hand h)
+        {
+            if (h.Cards.All(x => x != Card.Jack) || h.HandType == HandType.FiveOfAKind)
+            {
+                // No jokers, no change
+                // Or 5 of a kind and we can't get better
+                return h.HandType;
+            }
+
+            // Try each hand with jokers as the other cards in that hand
+            // There isn't really a scenario where having a joker be two different cards is better than having them all be the same card
+            // There's also no scenario where you'd want them to be different than the cards in your hand currently
+            var uniqueCards = h.Cards.Distinct();
+
+            var updatedType = h.HandType;
+
+            foreach (var uniqueCard in uniqueCards)
+            {
+                var cloneHand = h.Cards.Select(x => x == Card.Jack ? uniqueCard : x)
+                    .ToArray();
+
+                // Some hacky casting to use Math.Max
+                updatedType = (HandType)Math.Max((int)updatedType, (int)GetHandType(cloneHand));
+            }
+
+            return updatedType;
         }
 
         public override async Task ReadInput()
@@ -131,6 +164,13 @@ namespace PuzzleDays
 
         class HandComparer : IComparer<Hand>
         {
+            private readonly bool isPartTwo;
+
+            public HandComparer(bool isPartTwo)
+            {
+                this.isPartTwo = isPartTwo;
+            }
+
             public int Compare(Hand x, Hand y)
             {
                 var handTypeComparison = x.HandType.CompareTo(y.HandType);
@@ -142,9 +182,18 @@ namespace PuzzleDays
 
                 for (var i = 0; i < CardsInAHand; i++)
                 {
-                    if (x.Cards[i] != y.Cards[i])
+                    var xCard = x.Cards[i];
+                    var yCard = y.Cards[i];
+
+                    if (isPartTwo)
                     {
-                        return x.Cards[i] - y.Cards[i];
+                        xCard = xCard == Card.Jack ? Card.Joker : xCard;
+                        yCard = yCard == Card.Jack ? Card.Joker : yCard;
+                    }
+
+                    if (xCard != yCard)
+                    {
+                        return xCard - yCard;
                     }
                 }
 
@@ -165,6 +214,7 @@ namespace PuzzleDays
 
         enum Card
         {
+            Joker = 1,
             Two = 2,
             Three = 3,
             Four = 4,
