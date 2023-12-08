@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Helpers.FileReaders;
+using Helpers.MathAndSuch;
 using Helpers.Structure;
 
 namespace PuzzleDays
@@ -34,7 +35,57 @@ namespace PuzzleDays
 
         protected override async Task<string> SolvePartTwoInternal()
         {
-            throw new NotImplementedException();
+            // Some of this took time & looking at the data to figure out
+            var startingNodes = nodeMap.Values.Where(x => x.Label.EndsWith("A"))
+                .ToArray();
+
+            var loopData = new List<(int stepsToReachGoal, int loopSize)>();
+
+            // This whole foreach loop I wrote up front
+            foreach (var startingNode in startingNodes)
+            {
+                var stepsTakenForThisNodeToLoop = 0;
+                var reachedGoalForThisNode = false;
+                var stepsToReachGoal = 0;
+                var currentNode = startingNode;
+
+                // For every node we start at figure out:
+                // How long it takes to reach the goal
+                // How long after reaching the goal it takes us to loop back to it
+                // This is all pretty fast, it's just like running part 1 a few extra times
+                foreach (var direction in NextDirection())
+                {
+                    currentNode = direction == Direction.Right ? currentNode.Right : currentNode.Left;
+
+                    stepsTakenForThisNodeToLoop++;
+
+                    if (currentNode.Label.EndsWith("Z"))
+                    {
+                        if (!reachedGoalForThisNode)
+                        {
+                            reachedGoalForThisNode = true;
+                            stepsToReachGoal = stepsTakenForThisNodeToLoop;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                loopData.Add((stepsToReachGoal, stepsTakenForThisNodeToLoop - stepsToReachGoal));
+            }
+
+            // After that I got stuck for a while
+            // Originally the loop above was checking how long it took us to return to a node we've seen and not actually to reach the goal
+            // So I thought there would be some kind of offset needed between the loops and that is was some chinese remainder theorem junk or something
+            // Then I realized we need to end up at the goal, so the loop size above should be steps to go from goal and get back to it
+
+            // Turns out, for all the starting points in my input, it's just one big loop from the start node to the end node
+            // Which means no offset (yay) so just get the LCM between the loop sizes and we're done
+            var answer = MathFunctions.LeastCommonMultiple(loopData.Select(x => (long)x.loopSize));
+            
+            return answer.ToString();
         }
 
         private IEnumerable<Direction> NextDirection()
