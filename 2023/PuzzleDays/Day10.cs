@@ -94,15 +94,17 @@ namespace PuzzleDays
 
         private List<Coordinate> loopPath;
 
-        private HashSet<Coordinate> tilesInsideLoop = new HashSet<Coordinate>();
-
         protected override async Task<string> SolvePartTwoInternal()
         {
+            var loopPathHashSet = loopPath.ToHashSet();
+
+            // Trim down the search area
             var minX = loopPath.Min(x => x.X);
             var minY = loopPath.Min(x => x.Y);
             var maxX = loopPath.Max(x => x.X);
             var maxY = loopPath.Max(x => x.Y);
 
+            // Figure out what pipe section the start should be and add it to the map
             var nextToStart = map[loopPath[1]];
             var nextToEnd = map[loopPath[^1]];
 
@@ -147,41 +149,50 @@ namespace PuzzleDays
 
             var tilesInsideLoop = 0;
 
+            // Iterating every point
             for (var y = minY; y < maxY; y++)
             {
+                // Track the number of vertical lines we have passed
                 var currentVerticalLinesPassed = 0;
 
                 var prevDirection = PipeDirection.SouthWest;
 
                 for (var x = minX; x < maxX; x++)
                 {
-                    if (map.TryGetValue(new Coordinate(x, y), out var pipeSection) && loopPath.Contains(pipeSection.Coordinate))
+                    var coord = new Coordinate(x, y);
+
+                    if (loopPathHashSet.Contains(coord))
                     {
-                        // Part of the loop
+                        var pipeSection = map[coord];
+
+                        // Current point is part of the loop
                         if (pipeSection.Direction == PipeDirection.NorthSouth)
                         {
                             currentVerticalLinesPassed += 1;
                         }
 
+                        // A SE followed by NW is basically a vertical line, just wider
                         if (pipeSection.Direction == PipeDirection.NorthWest &&
                             prevDirection == PipeDirection.SouthEast)
                         {
                             currentVerticalLinesPassed += 1;
                         }
 
+                        // Same for NE followed by SW
                         if (pipeSection.Direction == PipeDirection.SouthWest &&
                             prevDirection == PipeDirection.NorthEast)
                         {
                             currentVerticalLinesPassed += 1;
                         }
 
+                        // If the pipe is horizontal, don't update
+                        // This is because F ----- J and FJ should count the same for the coordinates to the right
                         prevDirection = pipeSection.Direction == PipeDirection.EastWest ? prevDirection : pipeSection.Direction;
                     }
                     else
                     {
                         if (currentVerticalLinesPassed % 2 != 0)
                         {
-                            this.tilesInsideLoop.Add(new Coordinate(x, y));
                             tilesInsideLoop++;
                         }
                     }
@@ -193,17 +204,12 @@ namespace PuzzleDays
 
         private void DrawPipes()
         {
-            new List<Coordinate> { startingPoint }.Concat(map.Keys).Concat(tilesInsideLoop)
+            new List<Coordinate> { startingPoint }.Concat(map.Keys)
                 .Draw((c) =>
                 {
                     if (c == startingPoint)
                     {
                         return "S";
-                    }
-
-                    if (tilesInsideLoop.Contains(c))
-                    {
-                        return "I";
                     }
 
                     var pipe = map[c];
