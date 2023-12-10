@@ -60,8 +60,6 @@ namespace PuzzleDays
             // Add each of those to the queue with the beginning path
             startingPoints.ForEach(x => queueToCheck.Enqueue((x, new List<Coordinate> { startingPoint })));
             
-            List<Coordinate> loopPath = null;
-
             while (queueToCheck.Any())
             {
                 var (current, path) = queueToCheck.Dequeue();
@@ -94,19 +92,118 @@ namespace PuzzleDays
             return (loopPath.Count / 2).ToString();
         }
 
+        private List<Coordinate> loopPath;
+
+        private HashSet<Coordinate> tilesInsideLoop = new HashSet<Coordinate>();
+
         protected override async Task<string> SolvePartTwoInternal()
         {
-            throw new NotImplementedException();
+            var minX = loopPath.Min(x => x.X);
+            var minY = loopPath.Min(x => x.Y);
+            var maxX = loopPath.Max(x => x.X);
+            var maxY = loopPath.Max(x => x.Y);
+
+            var nextToStart = map[loopPath[1]];
+            var nextToEnd = map[loopPath[^1]];
+
+            var startPointNeighbors = startingPoint.GetNeighbors();
+
+            var directionOne = (Direction)startPointNeighbors.IndexOf(nextToStart.Coordinate);
+            var directionTwo = (Direction)startPointNeighbors.IndexOf(nextToEnd.Coordinate);
+
+            var directions = new List<Direction> { directionOne, directionTwo };
+
+            var startPointDirection = PipeDirection.NorthSouth;
+
+            if (directions.Contains(Direction.North) && directions.Contains(Direction.South))
+            {
+                startPointDirection = PipeDirection.NorthSouth;
+            }
+            if (directions.Contains(Direction.East) && directions.Contains(Direction.West))
+            {
+                startPointDirection = PipeDirection.EastWest;
+            }
+            if (directions.Contains(Direction.North) && directions.Contains(Direction.East))
+            {
+                startPointDirection = PipeDirection.NorthEast;
+            }
+            if (directions.Contains(Direction.North) && directions.Contains(Direction.West))
+            {
+                startPointDirection = PipeDirection.NorthWest;
+            }
+            if (directions.Contains(Direction.East) && directions.Contains(Direction.South))
+            {
+                startPointDirection = PipeDirection.SouthEast;
+            }
+            if (directions.Contains(Direction.West) && directions.Contains(Direction.South))
+            {
+                startPointDirection = PipeDirection.SouthWest;
+            }
+
+            map[startingPoint] = new PipeSection(startingPoint)
+            {
+                Direction = startPointDirection,
+            };
+
+            var tilesInsideLoop = 0;
+
+            for (var y = minY; y < maxY; y++)
+            {
+                var currentVerticalLinesPassed = 0;
+
+                var prevDirection = PipeDirection.SouthWest;
+
+                for (var x = minX; x < maxX; x++)
+                {
+                    if (map.TryGetValue(new Coordinate(x, y), out var pipeSection) && loopPath.Contains(pipeSection.Coordinate))
+                    {
+                        // Part of the loop
+                        if (pipeSection.Direction == PipeDirection.NorthSouth)
+                        {
+                            currentVerticalLinesPassed += 1;
+                        }
+
+                        if (pipeSection.Direction == PipeDirection.NorthWest &&
+                            prevDirection == PipeDirection.SouthEast)
+                        {
+                            currentVerticalLinesPassed += 1;
+                        }
+
+                        if (pipeSection.Direction == PipeDirection.SouthWest &&
+                            prevDirection == PipeDirection.NorthEast)
+                        {
+                            currentVerticalLinesPassed += 1;
+                        }
+
+                        prevDirection = pipeSection.Direction == PipeDirection.EastWest ? prevDirection : pipeSection.Direction;
+                    }
+                    else
+                    {
+                        if (currentVerticalLinesPassed % 2 != 0)
+                        {
+                            this.tilesInsideLoop.Add(new Coordinate(x, y));
+                            tilesInsideLoop++;
+                        }
+                    }
+                }
+            }
+            
+            return tilesInsideLoop.ToString();
         }
 
         private void DrawPipes()
         {
-            new List<Coordinate> { startingPoint }.Concat(map.Keys)
+            new List<Coordinate> { startingPoint }.Concat(map.Keys).Concat(tilesInsideLoop)
                 .Draw((c) =>
                 {
                     if (c == startingPoint)
                     {
                         return "S";
+                    }
+
+                    if (tilesInsideLoop.Contains(c))
+                    {
+                        return "I";
                     }
 
                     var pipe = map[c];
