@@ -116,7 +116,31 @@ namespace PuzzleDays
 
         protected override async Task<string> SolvePartTwoInternal()
         {
-            throw new NotImplementedException();
+            var unfoldedRecords = records.Select(r =>
+                {
+                    var newString = string.Join('?', Enumerable.Repeat(r.DamagedRecord, 5));
+                    var newList = Enumerable.Repeat(r.DamagedGroupsCount, 5)
+                        .SelectMany(x => x)
+                        .ToList();
+
+                    return new Record
+                    {
+                        DamagedGroupsCount = newList,
+                        DamagedRecord = newString,
+                    };
+                })
+                .ToList();
+
+            var result = unfoldedRecords.Select((r, idx) =>
+                {
+                    if (idx % 10 == 0)
+                    {
+                        Console.WriteLine(idx);
+                    }
+                    return CalculateArrangements(r);
+                }).Sum();
+
+            return result.ToString();
         }
 
         public override async Task ReadInput()
