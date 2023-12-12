@@ -19,43 +19,54 @@ namespace PuzzleDays
             return result.ToString();
         }
 
-        private int CalculateArrangements(Record record)
+        private decimal CalculateArrangements(Record record)
         {
-            return CalculateRecursive(record.DamagedRecord, record);
+            return CalculateRecursive(record.DamagedRecord, 0, record, new Dictionary<(int, int, int, int), decimal>());
         }
 
-        private int CalculateRecursive(string partialString, Record record)
+        private decimal CalculateRecursive(string partialString, int currentIndex, Record record, Dictionary<(int, int, int, int), decimal> knownPartials)
         {
-            var nextQuestionMark = partialString.IndexOf('?');
+            if (!IsValid(partialString, record, out var currentGroupSize, out var groupCount))
+            {
+                return 0m;
+            }
 
-            if (nextQuestionMark == -1)
+            if (currentIndex == partialString.Length)
             {
                 // Base case
-                return 1;
+                return 1m;
             }
 
-            var usingDot = partialString.ReplaceAt(nextQuestionMark, '.');
-            var usingHash = partialString.ReplaceAt(nextQuestionMark, '#');
-            var total = 0;
-
-            if (IsValid(usingDot, record))
+            if (partialString[currentIndex] != '?')
             {
-                total += CalculateRecursive(usingDot, record);
+                return CalculateRecursive(partialString, currentIndex + 1, record, knownPartials);
             }
 
-            if (IsValid(usingHash, record))
+            var inGroup = currentIndex > 0 && partialString[currentIndex - 1] == '#';
+
+            if (knownPartials.TryGetValue((currentIndex, currentGroupSize, groupCount, inGroup ? 0 : 1), out var knownTotal))
             {
-                total += CalculateRecursive(usingHash, record);
+                return knownTotal;
             }
+
+            var usingDot = partialString.ReplaceAt(currentIndex, '.');
+            var usingHash = partialString.ReplaceAt(currentIndex, '#');
+            var total = 0m;
+
+            total += CalculateRecursive(usingDot, currentIndex + 1, record, knownPartials);
+
+            total += CalculateRecursive(usingHash, currentIndex + 1, record, knownPartials);
+
+            knownPartials[(currentIndex, currentGroupSize, groupCount, inGroup ? 0 : 1)] = total;
 
             return total;
         }
 
-        private bool IsValid(string proposedRestoration, Record record)
+        private bool IsValid(string proposedRestoration, Record record, out int currentGroupSize, out int currentIndex)
         {
-            var currentIndex = 0;
+            currentIndex = 0;
             var currentGroupSizeLimit = record.DamagedGroupsCount[currentIndex];
-            var currentGroupSize = 0;
+            currentGroupSize = 0;
             var failOnHash = false;
 
             for (var i = 0; i < proposedRestoration.Length; i++)
@@ -131,14 +142,12 @@ namespace PuzzleDays
                 })
                 .ToList();
 
-            var result = unfoldedRecords.Select((r, idx) =>
-                {
-                    if (idx % 10 == 0)
-                    {
-                        Console.WriteLine(idx);
-                    }
-                    return CalculateArrangements(r);
-                }).Sum();
+            var result = unfoldedRecords.Select((r, idx) => CalculateArrangements(r)).Sum();
+
+            if (result <= 26363835031)
+            {
+                throw new Exception("Too low");
+            }
 
             return result.ToString();
         }
