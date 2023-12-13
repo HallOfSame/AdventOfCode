@@ -13,117 +13,153 @@ namespace PuzzleDays
     {
         protected override async Task<string> SolvePartOneInternal()
         {
-            var result = records.Select(CalculateArrangements)
-                .Sum();
+            var result = CalculatePossibleArrangements(records);
+
+            if (result != 7843)
+            {
+                Console.WriteLine("Wrong Part 1 now :(");
+            }
 
             return result.ToString();
         }
 
-        private decimal CalculateArrangements(Record record)
+        private decimal CalculatePossibleArrangements(List<Record> records)
         {
-            return CalculateRecursive(record.DamagedRecord, 0, record, new Dictionary<(int, int, int, int), decimal>());
+            return records.Select(r => RecursiveCalculateArrangements(r.DamagedRecord,
+                                                                      0,
+                                                                      0,
+                                                                      0,
+                                                                      r.DamagedGroupsCount,
+                                                                      new Dictionary<(int, int, int), decimal>()))
+                .Sum();
         }
 
-        private decimal CalculateRecursive(string partialString, int currentIndex, Record record, Dictionary<(int, int, int, int), decimal> knownPartials)
+        private decimal RecursiveCalculateArrangements(string springString,
+                                                       int currentIndex,
+                                                       int currentGroupLength,
+                                                       int currentGroupLimit,
+                                                       List<int> remainingGroups,
+                                                       Dictionary<(int, int, int), decimal> memo)
         {
-            if (!IsValid(partialString, record, out var currentGroupSize, out var groupCount))
+            var memoKey = (currentIndex, currentGroupLength, remainingGroups.Count);
+
+            if (memo.TryGetValue(memoKey,
+                                 out var preCalcRes))
             {
-                return 0m;
+                return preCalcRes;
             }
 
-            if (currentIndex == partialString.Length)
+            if (currentIndex == springString.Length)
             {
-                // Base case
-                return 1m;
-            }
-
-            if (partialString[currentIndex] != '?')
-            {
-                return CalculateRecursive(partialString, currentIndex + 1, record, knownPartials);
-            }
-
-            var inGroup = currentIndex > 0 && partialString[currentIndex - 1] == '#';
-
-            if (knownPartials.TryGetValue((currentIndex, currentGroupSize, groupCount, inGroup ? 0 : 1), out var knownTotal))
-            {
-                return knownTotal;
-            }
-
-            var usingDot = partialString.ReplaceAt(currentIndex, '.');
-            var usingHash = partialString.ReplaceAt(currentIndex, '#');
-            var total = 0m;
-
-            total += CalculateRecursive(usingDot, currentIndex + 1, record, knownPartials);
-
-            total += CalculateRecursive(usingHash, currentIndex + 1, record, knownPartials);
-
-            knownPartials[(currentIndex, currentGroupSize, groupCount, inGroup ? 0 : 1)] = total;
-
-            return total;
-        }
-
-        private bool IsValid(string proposedRestoration, Record record, out int currentGroupSize, out int currentIndex)
-        {
-            currentIndex = 0;
-            var currentGroupSizeLimit = record.DamagedGroupsCount[currentIndex];
-            currentGroupSize = 0;
-            var failOnHash = false;
-
-            for (var i = 0; i < proposedRestoration.Length; i++)
-            {
-                if (proposedRestoration[i] == '?')
+                if (!remainingGroups.Any() && (currentGroupLength == 0 || (currentGroupLength == currentGroupLimit)))
                 {
-                    return true;
+                    // String is valid
+                    return 1;
                 }
 
-                if (proposedRestoration[i] == '#')
+                // Ended string but didn't finish the final group
+                return 0;
+            }
+
+            var currentChar = springString[currentIndex];
+
+            // If this is a '.', did we stop a group? If so & it doesn't match, fail this string
+            if (currentChar == '.')
+            {
+                if (currentGroupLength > 0 && currentGroupLength != currentGroupLimit)
                 {
-                    if (failOnHash)
-                    {
-                        return false;
-                    }
-
-                    currentGroupSize++;
-
-                    if (currentGroupSize > currentGroupSizeLimit)
-                    {
-                        return false;
-                    }
+                    // This string isn't valid, we stopped a group that wasn't the full length
+                    return 0;
                 }
 
-                if (proposedRestoration[i] == '.' && currentGroupSize > 0)
+                currentGroupLength = 0;
+            }
+
+            // If this is a '#', are we continuing a group or starting a new one?
+            if (currentChar == '#')
+            {
+                if (currentGroupLength == 0)
                 {
-                    if (currentGroupSize != currentGroupSizeLimit)
+                    if (!remainingGroups.Any())
                     {
-                        return false;
+                        // We have # but no groups to fill
+                        return 0;
                     }
 
-                    currentGroupSize = 0;
-                    currentIndex++;
+                    // Starting a new group
+                    currentGroupLimit = remainingGroups.First();
+                    remainingGroups = remainingGroups.Skip(1)
+                        .ToList();
+                    currentGroupLength = 1;
+                }
+                else
+                {
+                    currentGroupLength++;
 
-                    if (currentIndex >= record.DamagedGroupsCount.Count)
+                    if (currentGroupLength > currentGroupLimit)
                     {
-                        failOnHash = true;
-                    }
-                    else
-                    {
-                        currentGroupSizeLimit = record.DamagedGroupsCount[currentIndex];
+                        // The current group has gone too long
+                        return 0;
                     }
                 }
             }
 
-            if (currentGroupSize > 0 && currentGroupSize != currentGroupSizeLimit)
+            // If this is a '?', see what values it can be
+            if (currentChar == '?')
             {
-                return false;
+                var questionArrangements = 0m;
+
+                // Can be '.' if the current group is the right size or we aren't in a group at all
+                if (currentGroupLength == 0 || currentGroupLength == currentGroupLimit)
+                {
+                    var withPeriod = RecursiveCalculateArrangements(springString,
+                                                                    currentIndex + 1,
+                                                                    0,
+                                                                    currentGroupLimit,
+                                                                    remainingGroups,
+                                                                    memo);
+
+                    questionArrangements += withPeriod;
+                }
+
+                // Can be '#' if we are not in a group or the current one needs more #
+                if ((currentGroupLength == 0 && remainingGroups.Any()) || (currentGroupLength > 0 && currentGroupLength < currentGroupLimit))
+                {
+                    if (currentGroupLength == 0)
+                    {
+                        // Starting a new group with this hash
+                        currentGroupLimit = remainingGroups.First();
+                        remainingGroups = remainingGroups.Skip(1)
+                            .ToList();
+                    }
+
+                    var withHash = RecursiveCalculateArrangements(springString,
+                                                                  currentIndex + 1,
+                                                                  currentGroupLength + 1,
+                                                                  currentGroupLimit,
+                                                                  remainingGroups,
+                                                                  memo);
+
+                    questionArrangements += withHash;
+                }
+
+                memo[memoKey] = questionArrangements;
+
+                return questionArrangements;
             }
 
-            if (currentGroupSize > 0)
-            {
-                currentIndex++;
-            }
+            var result = RecursiveCalculateArrangements(springString,
+                                                        currentIndex + 1,
+                                                        currentGroupLength,
+                                                        currentGroupLimit,
+                                                        remainingGroups,
+                                                        memo);
 
-            return currentIndex == record.DamagedGroupsCount.Count;
+            memo[memoKey] = result;
+
+            return result;
         }
+
 
         protected override async Task<string> SolvePartTwoInternal()
         {
@@ -142,12 +178,7 @@ namespace PuzzleDays
                 })
                 .ToList();
 
-            var result = unfoldedRecords.Select((r, idx) => CalculateArrangements(r)).Sum();
-
-            if (result <= 26363835031)
-            {
-                throw new Exception("Too low");
-            }
+            var result = CalculatePossibleArrangements(unfoldedRecords);
 
             return result.ToString();
         }
