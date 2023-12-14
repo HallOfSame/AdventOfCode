@@ -18,43 +18,68 @@ namespace PuzzleDays
 
         protected override async Task<string> SolvePartOneInternal()
         {
-            var updatedCoordinates = coordinates.ToList();
-            var coordinateMap = updatedCoordinates.ToDictionary(x => x.Coordinate, x => x);
+            var updatedCoordinates = RunCycle(Direction.North, coordinates);
 
-            var maxY = updatedCoordinates.Max(coord => coord.Coordinate.Y);
+            var result = CalculateSupportLoad(updatedCoordinates);
 
-            // coordinateMap.Keys.Draw(x => coordinateMap[x].Value.ToString(), "o");
+            return result.ToString();
+        }
 
-            // Starting as north as possible, roll circular rocks north until blocked
-            for (var y = maxY; y >= 0; y--)
+        private List<CoordinateWithCharacter> RunCycle(Direction direction,
+                                                       List<CoordinateWithCharacter> inputCoordinates)
+        {
+            Func<Coordinate, int> maxCoordinateSelector = direction switch
             {
-                var circleRocksOnThisRow = updatedCoordinates.Where(coord => coord.Coordinate.Y == y && coord.Value == CircularRock);
+                Direction.East => c => c.X,
+                Direction.West => c => 0 - c.X,
+                Direction.North => c => c.Y,
+                Direction.South => c => 0 - c.Y,
+                _ => throw new Exception("Not a cardinal direction")
+            };
 
-                foreach (var circleRock in circleRocksOnThisRow)
+            Func<Coordinate, int, bool> matchingCoordinateSelector = direction switch
+            {
+                Direction.East or Direction.West => (c, x) => c.X == x,
+                Direction.North or Direction.South => (c, y) => c.Y == y,
+                _ => throw new Exception("Not a cardinal direction")
+            };
+
+            var coordinateCopy = inputCoordinates.ToList();
+            var coordinateMap = coordinateCopy.ToDictionary(x => x.Coordinate, x => x);
+
+            var maxDirection = coordinateCopy.Max(x => maxCoordinateSelector(x.Coordinate));
+
+            for (var j = maxDirection; j >= 0; j--)
+            {
+                var circleRocksToProcess = coordinateCopy.Where(coord => matchingCoordinateSelector(coord.Coordinate, j) && coord.Value == CircularRock);
+
+                foreach (var circleRock in circleRocksToProcess)
                 {
-                    var northCoordinate = new Coordinate(circleRock.Coordinate.X, circleRock.Coordinate.Y + 1);
+                    var nextCoordinate = circleRock.Coordinate.GetDirection(direction);
 
-                    while (coordinateMap.TryGetValue(northCoordinate, out var north) && north.Value == EmptySpace)
+                    while (coordinateMap.TryGetValue(nextCoordinate, out var next) && next.Value == EmptySpace)
                     {
-                        circleRock.Coordinate.Y += 1;
-                        coordinateMap[northCoordinate] = circleRock;
-                        coordinateMap[new Coordinate(circleRock.Coordinate.X, circleRock.Coordinate.Y - 1)] = new CoordinateWithCharacter(new Coordinate(circleRock.Coordinate.X, circleRock.Coordinate.Y - 1))
+                        var originalCoordinate = circleRock.Coordinate;
+                        circleRock.Coordinate = nextCoordinate;
+                        coordinateMap[nextCoordinate] = circleRock;
+                        coordinateMap[originalCoordinate] = new CoordinateWithCharacter(originalCoordinate)
                         {
                             Value = EmptySpace
                         };
 
-                        northCoordinate = new Coordinate(circleRock.Coordinate.X, circleRock.Coordinate.Y + 1);
+                        nextCoordinate = circleRock.Coordinate.GetDirection(direction);
                     }
                 }
             }
 
-            // coordinateMap.Keys.Draw(x => coordinateMap[x].Value.ToString(), "o");
+            return coordinateCopy;
+        }
 
-            var result = updatedCoordinates.Where(x => x.Value == CircularRock)
+        private int CalculateSupportLoad(List<CoordinateWithCharacter> coordinates)
+        {
+            return coordinates.Where(x => x.Value == CircularRock)
                 .Select(x => x.Coordinate.Y + 1)
                 .Sum();
-
-            return result.ToString();
         }
 
         protected override async Task<string> SolvePartTwoInternal()
