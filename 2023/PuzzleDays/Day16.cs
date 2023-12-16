@@ -227,49 +227,79 @@ namespace PuzzleDays
 
         protected override async Task<string> SolvePartTwoInternal()
         {
-            var maxValue = 0;
             var maxX = coordinateMap.Max(x => x.Key.X);
             var maxY = coordinateMap.Max(x => x.Key.Y);
 
-            // Top row
-            for (var x = 0; x <= maxX; x++)
+
+            var topRowTask = Task.Run(() =>
             {
-                var startBeam = new Beam(new Coordinate(x, maxY + 1), Direction.South);
+                var topMax = 0;
+                // Top row
+                for (var x = 0; x <= maxX; x++)
+                {
+                    var startBeam = new Beam(new Coordinate(x, maxY + 1), Direction.South);
 
-                var energizeCount = GetEnergizeCount(startBeam);
+                    var energizeCount = GetEnergizeCount(startBeam);
 
-                maxValue = Math.Max(energizeCount, maxValue);
-            }
+                    topMax = Math.Max(energizeCount, topMax);
+                }
 
-            // Bottom row
-            for (var x = 0; x <= maxX; x++)
+                return topMax;
+            });
+
+
+            var bottomRowTask = Task.Run(() =>
             {
-                var startBeam = new Beam(new Coordinate(x, -1), Direction.North);
+                var bottomMax = 0;
+                // Bottom row
+                for (var x = 0; x <= maxX; x++)
+                {
+                    var startBeam = new Beam(new Coordinate(x, -1), Direction.North);
 
-                var energizeCount = GetEnergizeCount(startBeam);
+                    var energizeCount = GetEnergizeCount(startBeam);
 
-                maxValue = Math.Max(energizeCount, maxValue);
-            }
+                    bottomMax = Math.Max(energizeCount, bottomMax);
+                }
 
-            // Left side
-            for (var y = 0; y <= maxY; y++)
+                return bottomMax;
+            });
+
+            var rightSideTask = Task.Run(() =>
             {
-                var startBeam = new Beam(new Coordinate(-1, y), Direction.East);
+                var rightMax = 0;
+                // Right side
+                for (var y = 0; y <= maxY; y++)
+                {
+                    var startBeam = new Beam(new Coordinate(maxX + 1, y), Direction.West);
 
-                var energizeCount = GetEnergizeCount(startBeam);
+                    var energizeCount = GetEnergizeCount(startBeam);
 
-                maxValue = Math.Max(energizeCount, maxValue);
-            }
+                    rightMax = Math.Max(energizeCount, rightMax);
+                }
 
-            // Right side
-            for (var y = 0; y <= maxY; y++)
+                return rightMax;
+            });
+
+            var leftSideTask = Task.Run(() =>
             {
-                var startBeam = new Beam(new Coordinate(maxX + 1, y), Direction.West);
+                var leftMax = 0;
+                // Left side
+                for (var y = 0; y <= maxY; y++)
+                {
+                    var startBeam = new Beam(new Coordinate(-1, y), Direction.East);
 
-                var energizeCount = GetEnergizeCount(startBeam);
+                    var energizeCount = GetEnergizeCount(startBeam);
 
-                maxValue = Math.Max(energizeCount, maxValue);
-            }
+                    leftMax = Math.Max(energizeCount, leftMax);
+                }
+
+                return leftMax;
+            });
+
+            await Task.WhenAll(topRowTask, bottomRowTask, leftSideTask, rightSideTask);
+
+            var maxValue = new[] { topRowTask.Result, bottomRowTask.Result, leftSideTask.Result, rightSideTask.Result }
+                .Max();
 
             return maxValue.ToString();
         }
