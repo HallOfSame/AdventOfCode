@@ -11,9 +11,15 @@ namespace PuzzleDays
         {
             var maxY = coordinateMap.Keys.Max(x => x.Y);
 
+            return GetEnergizeCount(new Beam(new Coordinate(-1, maxY), Direction.East))
+                .ToString();
+        }
+
+        private int GetEnergizeCount(Beam startingBeam)
+        {
             var beams = new List<Beam>
             {
-                new (new Coordinate(-1, maxY), Direction.East),
+                startingBeam
             };
 
             var visited = new HashSet<Coordinate>();
@@ -92,17 +98,7 @@ namespace PuzzleDays
                 //        .ToString();
                 //});
 
-                if (energizedCount >= 8390)
-                {
-                    throw new Exception("Too high");
-                }
-
-                if (energizedCount <= 8310)
-                {
-                    throw new Exception("Too low");
-                }
-
-                return energizedCount.ToString();
+                return energizedCount;
             }
         }
 
@@ -231,7 +227,51 @@ namespace PuzzleDays
 
         protected override async Task<string> SolvePartTwoInternal()
         {
-            throw new NotImplementedException();
+            var maxValue = 0;
+            var maxX = coordinateMap.Max(x => x.Key.X);
+            var maxY = coordinateMap.Max(x => x.Key.Y);
+
+            // Top row
+            for (var x = 0; x <= maxX; x++)
+            {
+                var startBeam = new Beam(new Coordinate(x, maxY + 1), Direction.South);
+
+                var energizeCount = GetEnergizeCount(startBeam);
+
+                maxValue = Math.Max(energizeCount, maxValue);
+            }
+
+            // Bottom row
+            for (var x = 0; x <= maxX; x++)
+            {
+                var startBeam = new Beam(new Coordinate(x, -1), Direction.North);
+
+                var energizeCount = GetEnergizeCount(startBeam);
+
+                maxValue = Math.Max(energizeCount, maxValue);
+            }
+
+            // Left side
+            for (var y = 0; y <= maxY; y++)
+            {
+                var startBeam = new Beam(new Coordinate(-1, y), Direction.East);
+
+                var energizeCount = GetEnergizeCount(startBeam);
+
+                maxValue = Math.Max(energizeCount, maxValue);
+            }
+
+            // Right side
+            for (var y = 0; y <= maxY; y++)
+            {
+                var startBeam = new Beam(new Coordinate(maxX + 1, y), Direction.West);
+
+                var energizeCount = GetEnergizeCount(startBeam);
+
+                maxValue = Math.Max(energizeCount, maxValue);
+            }
+
+            return maxValue.ToString();
         }
 
         private Dictionary<Coordinate, char> coordinateMap;
