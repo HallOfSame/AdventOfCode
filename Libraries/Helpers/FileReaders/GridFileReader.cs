@@ -48,3 +48,10 @@ public class CoordinateWithCharacter : ObjectWithCoordinateEquality
     {
     }
 }
+
+public class CoordinateWithValue<T> : ObjectWithCoordinateEquality
+{
+    public T Value { get; set; }
+
+    public CoordinateWithValue(Coordinate coordinate) : base(coordinate) {}
+}
