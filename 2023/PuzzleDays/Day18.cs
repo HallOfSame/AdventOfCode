@@ -4,6 +4,7 @@ using Helpers.Maps;
 using Helpers.Structure;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,64 +15,99 @@ namespace PuzzleDays
     {
         protected override async Task<string> SolvePartOneInternal()
         {
-            var trenchLocations = new HashSet<Coordinate>();
+            var totalArea = CalculateArea(digInstructions);
+
+            return totalArea.ToString();
+        }
+
+        private decimal CalculateArea(List<DigInstruction> instructions)
+        {
+            var edges = new List<(Coordinate, Coordinate)>();
 
             var currentLocation = new Coordinate(0, 0);
 
-            trenchLocations.Add(currentLocation);
-
-            foreach (var instruction in digInstructions)
+            foreach (var instruction in instructions)
             {
-                for (var step = 0; step < instruction.DigSteps; step++)
-                {
-                    currentLocation = currentLocation.GetDirection(instruction.DigDirection);
-                    trenchLocations.Add(currentLocation);
-                }
+                var edgeStart = (Coordinate)currentLocation.Clone();
+
+                var edgeEnd = currentLocation.GetDirection(instruction.DigDirection,
+                                                           instruction.DigSteps);
+
+                edges.Add((edgeStart, edgeEnd));
+
+                currentLocation = edgeEnd;
             }
 
-            var floodFillStart = new Coordinate(1,
-                                                -1);
+            // Push everything up to the positive quadrant
+            var minY = edges.Min(x => Math.Min(x.Item1.Y, x.Item2.Y));
+            var minX = edges.Min(x => Math.Min(x.Item1.X,
+                                               x.Item2.X));
 
-            trenchLocations.Concat(new [] { floodFillStart}).Draw(x => x.X == floodFillStart.X && x.Y == floodFillStart.Y ? "F" : "#", forceOrigin: true);
+            minY = minY > 0
+                       ? 0
+                       : Math.Abs(minY);
+            minX = minX > 0
+                       ? 0
+                       : Math.Abs(minX);
 
-            var trenchSize = trenchLocations.Count;
-            var fillSize = FloodFillCount(floodFillStart,
-                                          trenchLocations);
 
-            var result = trenchSize + fillSize;
+            edges.ForEach(e =>
+                          {
+                              e.Item1.X += minX;
+                              e.Item1.Y += minY;
+                              e.Item2.X += minX;
+                              e.Item2.Y += minY;
+                          });
 
-            return result.ToString();
-        }
+            // Shouldn't need a final edge, instructions get us back to the start
+            var innerArea = 0m;
 
-        private int FloodFillCount(Coordinate currentLocation, HashSet<Coordinate> edgeCoordinates)
-        {
-            var queue = new Queue<Coordinate>();
-
-            queue.Enqueue(currentLocation);
-
-            var visited = new HashSet<Coordinate>();
-
-            while (queue.Count > 0)
+            foreach (var edge in edges)
             {
-                var n = queue.Dequeue();
+                var avgHeight = (edge.Item1.Y + edge.Item2.Y) / 2m;
+                var width = edge.Item2.X - edge.Item1.X;
 
-                if (edgeCoordinates.Contains(n) || visited.Contains(n))
-                {
-                    continue;
-                }
+                var edgeArea = avgHeight * width;
 
-                visited.Add(n);
-
-                n.GetNeighbors()
-                 .ForEach(queue.Enqueue);
+                innerArea += edgeArea;
             }
 
-            return visited.Count;
+            var edgeLengths = edges.Sum(x => CoordinateHelper.ManhattanDistance(x.Item1,
+                                                                                x.Item2));
+
+            return innerArea + (edgeLengths / 2m) + 1;
         }
 
         protected override async Task<string> SolvePartTwoInternal()
         {
-            throw new NotImplementedException();
+            var updatedInstructions = digInstructions.Select(x =>
+                                                             {
+                                                                 var newDirection = x.HexColorCode[^1] switch
+                                                                 {
+                                                                     '0' => Direction.East,
+                                                                     '1' => Direction.South,
+                                                                     '2' => Direction.West,
+                                                                     '3' => Direction.North,
+                                                                     _ => throw new NotImplementedException()
+                                                                 };
+
+                                                                 var hexStepCount = x.HexColorCode[..^1];
+
+                                                                 var stepCount = Convert.ToInt32(hexStepCount,
+                                                                                                 16);
+
+                                                                 return new DigInstruction
+                                                                        {
+                                                                            DigDirection = newDirection,
+                                                                            DigSteps = stepCount,
+                                                                            HexColorCode = x.HexColorCode
+                                                                        };
+                                                             })
+                                                     .ToList();
+
+            var result = CalculateArea(updatedInstructions);
+
+            return result.ToString();
         }
 
         private List<DigInstruction> digInstructions;
@@ -109,6 +145,7 @@ namespace PuzzleDays
             }
         }
 
+        [DebuggerDisplay("#{HexColorCode} = {DirectionToChar} {DigSteps}")]
         class DigInstruction
         {
             public string HexColorCode { get; set; }
@@ -116,6 +153,21 @@ namespace PuzzleDays
             public Direction DigDirection { get; set; }
 
             public int DigSteps { get; set; }
+
+            public string DirectionToChar
+            {
+                get
+                {
+                    return DigDirection switch
+                    {
+                        Direction.North => "U",
+                        Direction.South => "D",
+                        Direction.West => "L",
+                        Direction.East => "R",
+                        _ => throw new NotImplementedException(),
+                    };
+                }
+            }
         }
     }
 }
