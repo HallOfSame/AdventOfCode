@@ -91,7 +91,7 @@ namespace PuzzleDays
 
             var endDirection = Direction.North;
 
-            while (toCheck.Any())
+            while (toCheck.Count > 0)
             {
                 var (currentCoordinate, currentDirection) = toCheck.Dequeue();
 
