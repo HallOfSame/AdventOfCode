@@ -45,16 +45,17 @@ namespace PuzzleDays
 
             var yMax = coordinates.Max(x => x.Coordinate.Y);
             var xMax = coordinates.Max(x => x.Coordinate.X);
+
             var coordinateMap = coordinates.ToDictionary(x => x.Coordinate, x => x.Value);
             var costDictionary = new Dictionary<(Coordinate, Direction), int>();
-            var prevDictionary = new Dictionary<(Coordinate, Direction), (Coordinate, Direction)?>();
+            // var prevDictionary = new Dictionary<(Coordinate, Direction), (Coordinate, Direction)?>();
 
             foreach (var dir in new[] { Direction.North, Direction.East, Direction.South, Direction.West })
             {
                 foreach (var coordinate in coordinateMap.Keys)
                 {
                     costDictionary[(coordinate, dir)] = int.MaxValue;
-                    prevDictionary[(coordinate, dir)] = null;
+                    // prevDictionary[(coordinate, dir)] = null;
                 }
             }
 
@@ -70,12 +71,12 @@ namespace PuzzleDays
                 {
                     var coordinate = startPoint.GetDirection(direction, i);
 
-                    if (!coordinateMap.ContainsKey(coordinate))
+                    if (!coordinateMap.TryGetValue(coordinate, out var neighborCost))
                     {
                         continue;
                     }
 
-                    runningCost += coordinateMap[coordinate];
+                    runningCost += neighborCost;
 
                     if (i < minBeforeTurn)
                     {
@@ -83,7 +84,7 @@ namespace PuzzleDays
                     }
 
                     costDictionary[(coordinate, direction)] = runningCost;
-                    prevDictionary[(coordinate, direction)] = (startPoint, direction);
+                    // prevDictionary[(coordinate, direction)] = (startPoint, direction);
 
                     toCheck.Enqueue((coordinate, direction), runningCost);
                 }
@@ -120,12 +121,13 @@ namespace PuzzleDays
                     {
                         var neighbor = currentCoordinate.GetDirection(direction, i);
 
-                        if (!coordinateMap.ContainsKey(neighbor))
+                        if (!coordinateMap.TryGetValue(neighbor, out var addedCost))
                         {
-                            continue;
+                            // If we broke the bounds, we won't find anything else in this direction
+                            break;
                         }
 
-                        neighborCost += coordinateMap[neighbor];
+                        neighborCost += addedCost;
 
                         if (i < minBeforeTurn)
                         {
@@ -144,7 +146,7 @@ namespace PuzzleDays
                         {
                             toCheck.Enqueue((neighbor, direction), newDistance);
                             costDictionary[(neighbor, direction)] = newDistance;
-                            prevDictionary[(neighbor, direction)] = (currentCoordinate, currentDirection);
+                            // prevDictionary[(neighbor, direction)] = (currentCoordinate, currentDirection);
                         }
                     }
                 }
