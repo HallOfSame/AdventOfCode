@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -46,7 +47,138 @@ namespace PuzzleDays
 
         protected override async Task<string> SolvePartTwoInternal()
         {
-            throw new NotImplementedException();
+            var startPoint = workflows["in"];
+
+            var acceptanceRules = FindAcceptedPaths(startPoint,
+                                        new List<Rule>());
+
+            // Luckily it seems like there is no overlap between ranges
+            var validRanges = acceptanceRules.Select(CalculateCombinations);
+
+            return validRanges.Sum().ToString();
+        }
+
+        private decimal CalculateCombinations(List<Rule> rules)
+        {
+            // Iterate the rules, clamping the value ranges as needed
+            var xRange = new Range
+                         {
+                             Min = 1,
+                             Max = 4000,
+                         };
+            var mRange = new Range
+                         {
+                             Min = 1,
+                             Max = 4000,
+                         };
+            var aRange = new Range
+                         {
+                             Min = 1,
+                             Max = 4000,
+                         };
+            var sRange = new Range
+                         {
+                             Min = 1,
+                             Max = 4000,
+                         };
+
+            foreach (var rule in rules)
+            {
+                var targetRange = rule.Target switch
+                {
+                    'x' => xRange,
+                    'm' => mRange,
+                    'a' => aRange,
+                    's' => sRange,
+                    _ => throw new Exception()
+                };
+
+                if (rule.Comparison == Comparison.LT)
+                {
+                    if (targetRange.Max > rule.Value)
+                    {
+                        targetRange.Max = rule.Value - 1;
+                    }
+                }
+                else
+                {
+                    if (targetRange.Min < rule.Value)
+                    {
+                        targetRange.Min = rule.Value + 1;
+                    }
+                }
+            }
+
+            // Check for invalid rulesets (not sure this applies)
+            if (xRange.Max < xRange.Min || mRange.Max < mRange.Min || aRange.Max < aRange.Min || sRange.Max < sRange.Min)
+            {
+                return 0m;
+            }
+
+            var xValues = xRange.Max - xRange.Min + 1;
+            var mValues = mRange.Max - mRange.Min + 1;
+            var aValues = aRange.Max - aRange.Min + 1;
+            var sValues = sRange.Max - sRange.Min + 1;
+
+            return (decimal)xValues * mValues * aValues * sValues;
+        }
+
+        private List<List<Rule>> FindAcceptedPaths(Workflow workflow,
+                                                   List<Rule> currentRules)
+        {
+            var results = new List<List<Rule>>();
+
+            var invertedRules = new List<Rule>();
+
+            // Go through each rule of the workflow
+            foreach (var rule in workflow.Rules)
+            {
+                // The current ruleset is:
+                // Any rules we have past already (inverted)
+                // Plus the current rule
+                var withThisRule = invertedRules.Concat(new[]
+                                                        {
+                                                            rule
+                                                        });
+
+                // If destination is A we have a solution
+                if (rule.Destination == "A")
+                {
+                    results.Add(currentRules.Concat(withThisRule.ToList())
+                                            .ToList());
+                }
+                // Otherwise if it isn't rejected, recurse
+                else if (rule.Destination != "R")
+                {
+                    // Find paths after this rule
+                    var optionsAfterThisRule = FindAcceptedPaths(workflows[rule.Destination],
+                                                                 currentRules.Concat(withThisRule.ToList())
+                                                                             .ToList());
+
+                    optionsAfterThisRule.ForEach(results.Add);
+                }
+
+                // Further processing means we didn't match this rule, so invert it
+                invertedRules.Add(rule.InvertedRule());
+            }
+
+            // If this default to accepted, then include all the inverted rules as a result
+            if (workflow.DefaultDestination == "A")
+            {
+                results.Add(currentRules.Concat(invertedRules)
+                                        .ToList());
+            }
+            else if (workflow.DefaultDestination != "R")
+            {
+                // Else, recurse and see what rules we hit in the next workflow
+                var optionsAfterThisRule = FindAcceptedPaths(workflows[workflow.DefaultDestination],
+                                                             currentRules.Concat(invertedRules)
+                                                                         .ToList());
+
+                optionsAfterThisRule.ForEach(results.Add);
+            }
+
+            return results;
         }
 
         private Dictionary<string, Workflow> workflows = new();
@@ -141,6 +273,18 @@ namespace PuzzleDays
             }
         }
 
+        class Range
+        {
+            public int Min { get; set; }
+
+            public int Max { get; set; }
+
+            public override string ToString()
+            {
+                return $"[{Min},{Max}]";
+            }
+        }
+
         class Part
         {
             public int X { get; set; }
@@ -199,15 +343,40 @@ namespace PuzzleDays
             LT
         }
 
+        [DebuggerDisplay("{Target}{CompString}{Value}")]
         class Rule
         {
             public Comparison Comparison { get; set; }
+
+            public string CompString
+            {
+                get
+                {
+                    return Comparison == Comparison.LT
+                               ? "<"
+                               : ">";
+                }
+            }
 
             public int Value { get; set; }
 
             public char Target { get; set; }
 
             public string Destination { get; set; }
+
+            public Rule InvertedRule()
+            {
+                return new Rule
+                       {
+                           Target = Target,
+                           Comparison = Comparison == Comparison.LT
+                                            ? Comparison.GT
+                                            : Comparison.LT,
+                           Value = Comparison == Comparison.LT
+                                       ? Value - 1
+                                       : Value + 1
+                       };
+            }
         }
     }
 }
