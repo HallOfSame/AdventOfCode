@@ -83,7 +83,7 @@ namespace PuzzleDays
 
             // Turns out, for all the starting points in my input, it's just one big loop from the start node to the end node
             // Which means no offset (yay) so just get the LCM between the loop sizes and we're done
-            var answer = MathFunctions.LeastCommonMultiple(loopData.Select(x => (long)x.loopSize));
+            var answer = MathFunctions.LeastCommonMultiple(loopData.Select(x => (decimal)x.loopSize));
             
             return answer.ToString();
         }

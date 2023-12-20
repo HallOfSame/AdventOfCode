@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Helpers.FileReaders;
+using Helpers.MathAndSuch;
 using Helpers.Structure;
 
 namespace PuzzleDays
@@ -17,22 +18,60 @@ namespace PuzzleDays
             return result.ToString();
         }
 
+        private List<string> inputsConnectedToVR = new()
+        {
+            "fm", "fg", "dk", "pq"
+        };
+
         private decimal PressButtonMultipleTimes(int times)
         {
             var high = 0m;
             var low = 0m;
 
-            for (var i = 0; i < times; i++)
+            var cycles = new Dictionary<string, int>();
+
+            var i = 0;
+
+            while(true)
             {
-                var (h, l) = PressButton();
-                high += h;
-                low += l;
+                var (h, l, lowHit) = PressButton();
+
+                if (!string.IsNullOrEmpty(lowHit))
+                {
+                    cycles[lowHit] = i + 1;
+                }
+
+                if (i < times)
+                {
+                    high += h;
+                    low += l;
+                }
+
+                i++;
+
+                if (i >= times && cycles.Count == 4)
+                {
+                    break;
+                }
+            }
+
+            part2 = MathFunctions.LeastCommonMultiple(cycles.Values.Select(x => (decimal)x));
+
+            if (part2 >= 89448022004224314928m)
+            {
+                Console.WriteLine("Too high");
+            }
+            else if (part2 <= 932332404000)
+            {
+                Console.WriteLine("Too low");
             }
 
             return high * low;
         }
 
-        private (int, int) PressButton()
+        private decimal part2;
+
+        private (int, int, string) PressButton()
         {
             var pulseCounts = new Dictionary<PulseType, int>
             {
@@ -49,11 +88,27 @@ namespace PuzzleDays
                 }
             };
 
+            var lowHitCycle = string.Empty;
+
             while (pulsesForThisRound.Any())
             {
                 pulsesForThisRound.ForEach(x =>
                 {
-                    // Console.WriteLine($"{x.Source} -{(x.Type == PulseType.High ? "high" : "low")}-> {x.Destination}");
+                    if (inputsConnectedToVR.Contains(x.Destination))
+                    {
+                        if (x.Type == PulseType.Low)
+                        {
+                            if (!string.IsNullOrWhiteSpace(lowHitCycle))
+                            {
+                                throw new Exception();
+                            }
+
+                            lowHitCycle = x.Destination;
+
+                            Console.WriteLine($"{x.Source} -{(x.Type == PulseType.High ? "high" : "low")}-> {x.Destination}");
+                        }
+                    }
+
                     pulseCounts[x.Type] += 1;
                 });
 
@@ -75,12 +130,12 @@ namespace PuzzleDays
                 pulsesForThisRound = newPulses;
             }
 
-            return (pulseCounts[PulseType.High], pulseCounts[PulseType.Low]);
+            return (pulseCounts[PulseType.High], pulseCounts[PulseType.Low], lowHitCycle);
         }
 
         protected override async Task<string> SolvePartTwoInternal()
         {
-            throw new NotImplementedException();
+            return part2.ToString();
         }
 
         private Dictionary<string, Module> moduleDictionary;
@@ -256,8 +311,8 @@ namespace PuzzleDays
 
         enum PulseType
         {
-            Low,
-            High,
+            Low = 0,
+            High = 1,
         }
     }
 }

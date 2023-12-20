@@ -7,10 +7,10 @@ namespace Helpers.MathAndSuch;
 public class MathFunctions
 {
     // Tweaked from stack overflow
-    public static long LeastCommonMultiple(IEnumerable<long> values)
+    public static decimal LeastCommonMultiple(IEnumerable<decimal> values)
     {
         // GDC using Euclids formula (I think)
-        long GCD(long a, long b)
+        decimal GCD(decimal a, decimal b)
         {
             while (true)
             {
@@ -26,7 +26,7 @@ public class MathFunctions
         }
 
         // LCM of two numbers can be sped up by using GCD
-        long LCM(long a, long b)
+        decimal LCM(decimal a, decimal b)
         {
             return a * b / GCD(a, b);
         }
