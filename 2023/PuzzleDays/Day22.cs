@@ -13,15 +13,17 @@ namespace PuzzleDays
     {
         protected override async Task<string> SolvePartOneInternal()
         {
-            var result = LetBricksFall();
+            bricksSupportingNothing = LetBricksFall();
 
-            return result.ToString();
+            return bricksSupportingNothing.Count.ToString();
         }
 
-        private int LetBricksFall()
-        {
-            var brickSupporterMap = new Dictionary<Brick, List<Brick>>();
+        private List<Brick> bricksSupportingNothing;
 
+        private Dictionary<Brick, List<Brick>> brickSupporterMap = new();
+
+        private List<Brick> LetBricksFall()
+        {
             // For this to work, start with the lowest bricks first
             bricks = bricks.OrderBy(x => x.Start.Z)
                 .ToList();
@@ -61,12 +63,55 @@ namespace PuzzleDays
                 })
                 .ToList();
 
-            return bricksWeCanDisintegrate.Count;
+            return bricksWeCanDisintegrate;
         }
 
         protected override async Task<string> SolvePartTwoInternal()
         {
-            throw new NotImplementedException();
+            var sum = 0;
+
+            // We can ignore bricks that don't support anything to save some time
+            foreach (var brick in bricks.Except(bricksSupportingNothing))
+            {
+                var res = CalculateFallenBricks(brick,
+                                                brickSupporterMap.ToDictionary(x => x.Key,
+                                                                               x => x.Value.ToList()));
+
+                // We count the original brick as falling but that isn't true, hence - 1
+                sum += res - 1;
+            }
+
+            return sum.ToString();
+        }
+
+        private int CalculateFallenBricks(Brick brickRemoved, Dictionary<Brick, List<Brick>> bricksAboveMap)
+        {
+            // Find the bricks that fall because of this one being removed
+            var newlyFallenBricks = new List<Brick>();
+
+            foreach (var (brickAboveRemovedBrick, allSupporters) in bricksAboveMap
+                         .Where(x => x.Value.Contains(brickRemoved))
+                         .ToList())
+            {
+                if (allSupporters.Count == 1)
+                {
+                    newlyFallenBricks.Add(brickAboveRemovedBrick);
+                }
+                else
+                {
+                    allSupporters.Remove(brickRemoved);
+                }
+            }
+
+            var fallCount = 1;
+
+            // Recurse
+            foreach (var fallen in newlyFallenBricks)
+            {
+                fallCount += CalculateFallenBricks(fallen, bricksAboveMap);
+            }
+
+            return fallCount;
         }
 
         public override async Task ReadInput()
