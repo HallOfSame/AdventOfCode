@@ -10,8 +10,8 @@ namespace Helpers.Maps
         {
         }
 
-        public Coordinate(int x,
-                          int y)
+        public Coordinate(decimal x,
+                          decimal y)
         {
             X = x;
             Y = y;
@@ -21,9 +21,9 @@ namespace Helpers.Maps
 
         #region Instance Properties
 
-        public int X { get; set; }
+        public decimal X { get; set; }
 
-        public int Y { get; set; }
+        public decimal Y { get; set; }
 
         #endregion
 

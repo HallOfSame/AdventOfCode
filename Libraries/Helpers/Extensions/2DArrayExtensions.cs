@@ -54,8 +54,8 @@ namespace Helpers.Extensions
         public static bool IsValidCoordinate<T>(this T[,] array,
                                                 Coordinate coordinate)
         {
-            return array.IsValidCoordinate(coordinate.X,
-                                           coordinate.Y);
+            return array.IsValidCoordinate((int)coordinate.X,
+                                           (int)coordinate.Y);
         }
 
         public static bool IsValidCoordinate<T>(this T[,] array,

@@ -137,8 +137,8 @@ namespace PuzzleDays
 
             map = grid.ToDictionary(x => x.Coordinate, x => x.Value);
 
-            xSize = map.Max(x => x.Key.X) + 1;
-            ySize = map.Max(x => x.Key.Y) + 1;
+            xSize = (int)map.Max(x => x.Key.X) + 1;
+            ySize = (int)map.Max(x => x.Key.Y) + 1;
         }
     }
 }

@@ -32,10 +32,10 @@ namespace PuzzleDays
             moveCount = 0;
             Func<Coordinate, int> maxCoordinateSelector = direction switch
             {
-                Direction.East => c => c.X,
-                Direction.West => c => Math.Abs(0 - c.X),
-                Direction.North => c => c.Y,
-                Direction.South => c => Math.Abs(0 - c.Y),
+                Direction.East => c => (int)c.X,
+                Direction.West => c => (int)Math.Abs(0 - c.X),
+                Direction.North => c => (int)c.Y,
+                Direction.South => c => (int)Math.Abs(0 - c.Y),
                 _ => throw new Exception("Not a cardinal direction")
             };
 
@@ -89,7 +89,7 @@ namespace PuzzleDays
 
         private int CalculateSupportLoad(List<CoordinateWithCharacter> coordinates)
         {
-            return coordinates.Where(x => x.Value == CircularRock)
+            return (int)coordinates.Where(x => x.Value == CircularRock)
                 .Select(x => x.Coordinate.Y + 1)
                 .Sum();
         }

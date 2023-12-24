@@ -134,10 +134,10 @@ namespace PuzzleDays
                 Name = name;
                 Start = start;
                 End = end;
-                XRange = (Math.Max(Start.X, End.X), Math.Min(Start.X, End.X));
-                YRange = (Math.Max(Start.Y, End.Y), Math.Min(Start.Y, End.Y));
-                Top = Math.Max(Start.Z, End.Z);
-                Bottom = Math.Min(Start.Z, End.Z);
+                XRange = ((int)Math.Max(Start.X, End.X), (int)Math.Min(Start.X, End.X));
+                YRange = ((int)Math.Max(Start.Y, End.Y), (int)Math.Min(Start.Y, End.Y));
+                Top = (int)Math.Max(Start.Z, End.Z);
+                Bottom = (int)Math.Min(Start.Z, End.Z);
             }
 
             public (int max, int min) XRange { get; }

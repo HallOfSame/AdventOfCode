@@ -7,8 +7,8 @@ public class InfiniteMap
 {
     private readonly Dictionary<Coordinate, char> originalMap;
 
-    private readonly int xSize;
-    private readonly int ySize;
+    private readonly decimal xSize;
+    private readonly decimal ySize;
 
     public InfiniteMap(Dictionary<Coordinate, char> originalMap)
     {

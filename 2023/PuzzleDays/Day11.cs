@@ -111,7 +111,7 @@ namespace PuzzleDays
 
             var galaxiCombos = galaxies.Combinations(2);
 
-            var runningSum = 0L;
+            var runningSum = 0m;
 
             foreach (var combo in galaxiCombos)
             {

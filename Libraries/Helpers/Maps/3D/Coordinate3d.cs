@@ -10,9 +10,9 @@ namespace Helpers.Maps._3D
         {
         }
 
-        public Coordinate3d(int x,
-                            int y,
-                            int z)
+        public Coordinate3d(decimal x,
+                            decimal y,
+                            decimal z)
             : base(x,
                    y)
         {
@@ -23,7 +23,7 @@ namespace Helpers.Maps._3D
 
         #region Instance Properties
 
-        public int Z { get; set; }
+        public decimal Z { get; set; }
 
         #endregion
 
