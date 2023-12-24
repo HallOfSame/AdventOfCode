@@ -51,14 +51,14 @@ namespace PuzzleDays
 
             var testAreaSize = (min: 200000000000000, max: 400000000000000);
 
-            var validIntersects = intersects.Where(x => x.intersect.x >= testAreaSize.min
-                                                        && x.intersect.x <= testAreaSize.max &&
-                                                        x.intersect.y >= testAreaSize.min &&
-                                                        x.intersect.y <= testAreaSize.max)
+            var validIntersectsForPart1 = intersects.Where(x => x.intersect.x >= testAreaSize.min
+                                                                && x.intersect.x <= testAreaSize.max &&
+                                                                x.intersect.y >= testAreaSize.min &&
+                                                                x.intersect.y <= testAreaSize.max)
                 .Where(x => !WasIntersectInPast(x.intersect, x.hailOne) && !WasIntersectInPast(x.intersect, x.hailTwo))
                 .ToList();
 
-            return validIntersects.Count.ToString();
+            return validIntersectsForPart1.Count.ToString();
         }
 
         private bool WasIntersectInPast((decimal x, decimal y) intersect, HailStone h)
@@ -113,7 +113,128 @@ namespace PuzzleDays
 
         protected override async Task<string> SolvePartTwoInternal()
         {
-            throw new NotImplementedException();
+            var maxVel = 250;
+            var minVel = -1 * maxVel;
+
+            // Probably don't need to check the full input to find a solution
+            hail = hail.OrderBy(x => x.StartPosition.X)
+                .ThenBy(x => x.StartPosition.Y)
+                .Take(20)
+                .ToList();
+
+            // Checking just x and y at first
+            for (var x = minVel; x <= maxVel; x++)
+            {
+                for (var y = minVel; y <= maxVel; y++)
+                {
+                    // Pick a velocity for the rock
+                    var rockVelocity = new Coordinate3d(x, y, 0);
+
+                    // Update all the hail stones to be moving relative to the rock
+                    var updatedHailStones = hail.Select(x => new HailStone
+                        {
+                            StartPosition = x.StartPosition,
+                            Velocity = new Coordinate3d(x.Velocity.X - rockVelocity.X,
+                                                        x.Velocity.Y - rockVelocity.Y,
+                                                        x.Velocity.Z)
+                        })
+                        .ToList();
+                    
+                    // And then check where those new updated lines would intersect
+                    var linesFromHail = updatedHailStones.Where(x => x.Velocity.X != 0)
+                        .Select(h =>
+                        {
+                            var m = (decimal)h.Velocity.Y / h.Velocity.X;
+
+                            var mx1Neg = -m * h.StartPosition.X;
+
+                            var rightSide = mx1Neg + h.StartPosition.Y;
+
+                            return (line: new _2DLine
+                            {
+                                A = m * -1,
+                                B = 1,
+                                C = rightSide * -1,
+                            }, hail: h);
+                        })
+                        .ToList();
+
+                    var pairs = linesFromHail.Combinations(2);
+
+                    var intersects = new List<((decimal x, decimal y) intersect, HailStone hailOne, HailStone hailTwo)>();
+
+                    foreach (var pair in pairs)
+                    {
+                        var h1 = pair.First();
+                        var h2 = pair.Last();
+
+                        var intersect = Calculate2dIntersect(h1
+                                                                 .line,
+                                                             h2
+                                                                 .line);
+
+                        if (intersect is null)
+                        {
+                            continue;
+                        }
+
+                        if (WasIntersectInPast(intersect.Value, h1.hail))
+                        {
+                            continue;
+                        }
+
+                        if (WasIntersectInPast(intersect.Value, h2.hail))
+                        {
+                            continue;
+                        }
+
+                        intersects.Add((intersect.Value, h1.hail, h2.hail));
+                    }
+
+                    // If they all intersect at the same point, then this solution in 2d is correct
+                    if (intersects.Select(x => x.intersect)
+                            .Distinct(new ApproximateComparer())
+                            .Count() != 1)
+                    {
+                        continue;
+                    }
+
+                    // Now move to checking the Z works out
+                    for (var z = minVel; z < maxVel; z++)
+                    {
+                        var zAtIntersect = intersects.SelectMany(x => new[]
+                        {
+                            GetZAtIntersect(x.intersect, x.hailOne, rockVelocity.Z + z),
+                            GetZAtIntersect(x.intersect, x.hailTwo, rockVelocity.Z + z)
+                        });
+
+                        // If they all also intersect at the same z then we found a solution
+                        if (zAtIntersect
+                                .Distinct(new ApproximateComparer2())
+                                .Count() == 1)
+                        {
+                            // And the coordinates for the solution are just the intersect point
+                            var ansZ = zAtIntersect.First();
+
+                            var xy = intersects.First()
+                                .intersect;
+
+                            return Math.Round(ansZ + xy.x + xy.y).ToString();
+                        }
+                    }
+                }
+            }
+
+            throw new Exception("Increase bounds");
+        }
+
+        private decimal GetZAtIntersect((decimal x, decimal y) intersect, HailStone h, decimal zOffset)
+        {
+            var xDiff = intersect.x - h.StartPosition.X;
+
+            var time = xDiff / h.Velocity.X;
+
+            return h.StartPosition.Z + (time * (h.Velocity.Z - zOffset));
         }
 
         private List<HailStone> hail;
@@ -121,6 +242,46 @@ namespace PuzzleDays
         public override async Task ReadInput()
         {
             hail = await new HailFileReader().ReadInputFromFile();
+        }
+
+        private class ApproximateComparer2 : IEqualityComparer<decimal>
+        {
+            private const decimal delta = 0.0001m;
+
+            public bool Equals(decimal x, decimal y)
+            {
+                if (Math.Abs(x - y) < delta)
+                {
+                    return true;
+                }
+
+                return x == y;
+            }
+
+            public int GetHashCode(decimal obj)
+            {
+                return 6;
+            }
+        }
+
+        private class ApproximateComparer : IEqualityComparer<(decimal, decimal)>
+        {
+            private const decimal delta = 0.0001m;
+
+            public bool Equals((decimal, decimal) x, (decimal, decimal) y)
+            {
+                if (Math.Abs(x.Item1 - y.Item1) < delta && Math.Abs(x.Item2 - y.Item2) < delta)
+                {
+                    return true;
+                }
+
+                return x.Item1 == y.Item1 && x.Item2 == y.Item2;
+            }
+
+            public int GetHashCode((decimal, decimal) obj)
+            {
+                return 6;
+            }
         }
 
         private class HailFileReader : FileReader<HailStone>
