@@ -15,4 +15,8 @@
     <Folder Include="wwwroot\fonts\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Libraries\Helpers\Helpers.csproj" />
+  </ItemGroup>
+
 </Project>

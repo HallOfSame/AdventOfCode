@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Helpers.Maps;
 
@@ -20,6 +22,28 @@ public class GridFileReader
 
             strings.Add(nextLine);
         }
+
+        // Reverse to make the origin the bottom left
+        strings.Reverse();
+
+        var strLength = strings[0]
+            .Length;
+
+        var outputs = new List<CoordinateWithCharacter>();
+
+        for (var y = 0; y < strings.Count; y++)
+        for (var x = 0; x < strLength; x++)
+            outputs.Add(new CoordinateWithCharacter(new Coordinate(x, y))
+            {
+                Value = strings[y][x]
+            });
+
+        return outputs;
+    }
+
+    public async Task<List<CoordinateWithCharacter>> ReadFromString(string input)
+    {
+        var strings = input.Split(Environment.NewLine).ToList();
 
         // Reverse to make the origin the bottom left
         strings.Reverse();

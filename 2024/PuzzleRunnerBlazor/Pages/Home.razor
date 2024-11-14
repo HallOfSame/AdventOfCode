@@ -1,57 +1,10 @@
 ﻿@page "/"
+@using PuzzleRunnerBlazor.Components;
 
 <PageTitle>Home</PageTitle>
 
 <h1>Hello, world!</h1>
 
 <span style="font-family: square;">Other font style</span>Welcome to your new app.
-<canvas id="canvas" width="100" height="100"></canvas>
-
 <br />
-<p id="coordinates"></p>
-
-<script type="text/javascript">
-    const pixelSize = 50;
-    const width = 4;
-    const height = 4;
-
-    const canvas = document.getElementById("canvas");
-    const coordsDisplay = document.getElementById('coordinates');
-    
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-    function drawText(x, y, text) {
-        ctx.fillStyle = 'black';
-        ctx.fillText(text, x * pixelSize, (y + 1) * pixelSize);
-    }
-
-    function drawSquare(x, y, color) {
-        ctx.fillStyle = color;
-        ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
-    }
-
-    // Function to update the mouse coordinates on the canvas
-    function updateCoordinates(event) {
-        // Get the mouse position relative to the canvas
-        const rect = canvas.getBoundingClientRect();  // Get canvas position relative to the viewport
-        const x = event.clientX - rect.left;          // Mouse X position
-        const y = event.clientY - rect.top;           // Mouse Y position
-
-        const translatedX = Math.floor(x / pixelSize);
-        const translatedY = Math.floor(y / pixelSize);
-
-        // Display the coordinates
-        coordsDisplay.textContent = `Mouse Coordinates: (${translatedX.toFixed(2)}, ${translatedY.toFixed(2)})`;
-    }
-
-    // Add event listener for mouse move
-    canvas.addEventListener('mousemove', updateCoordinates);
-
-    ctx.font = `${pixelSize}px square`;
-    drawText(0, 0, "A");
-    drawText(0, 1, "B");
-    drawText(1, 0, "C");
-    drawText(1, 1, "D");
-    drawSquare(1, 0, 'red');
-</script>
+<BlazorCanvas />
