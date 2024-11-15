@@ -13,6 +13,7 @@ public interface IStepExecutionResult
 /// <summary>
 /// To tag a puzzle executor that works in steps.
 /// Idea being to be able to run one step at a time and visualize in between.
+/// TODO not sure how to marry this with IExecutablePuzzle with two different steps
 /// </summary>
 public interface ISingleStepExecutable
 {

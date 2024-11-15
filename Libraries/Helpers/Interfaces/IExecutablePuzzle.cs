@@ -9,7 +9,6 @@ public interface IExecutionResult
 {
     public string Result { get; set; }
     public Exception? Exception { get; set; }
-    public bool IsCompleted { get; }
 }
 
 /// <summary>
