@@ -1,4 +1,4 @@
-﻿namespace PuzzleRunnerBlazor.Components
+﻿namespace PuzzleRunner.Components.Shared
 {
     public partial class BlazorCanvas
     {
