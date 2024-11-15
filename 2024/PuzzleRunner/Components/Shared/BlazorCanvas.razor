@@ -30,6 +30,7 @@
 
             var coordinateMap = (await new GridFileReader().ReadFromString(input)).ToDictionary(x => x.Coordinate, x => x.Value);
 
+            // TODO this should use drawable coordinates
             objRef = DotNetObjectReference.Create(this);
             await JsRuntime.InvokeVoidAsync("AocCanvas.enableCoordinateDisplay", "canvasToDraw", objRef);
 
