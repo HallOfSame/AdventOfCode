@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace Helpers.Structure
 {
+    [Obsolete("Replaced when adding the Blazor solver")]
     public class Solver
     {
         private readonly ProblemBase problem;
@@ -14,7 +15,7 @@ namespace Helpers.Structure
 
         private const int ExceptionTime = -2;
 
-        private const string ExceptionText = "Exception";
+        private const string ExceptionText = "InputLoadException";
 
         private const string NotImplementedText = "Not Implemented";
 
@@ -141,7 +142,7 @@ namespace Helpers.Structure
             }
             catch (Exception ex)
             {
-                AnsiConsole.MarkupLine("[red]Exception during core solve method.[/]");
+                AnsiConsole.MarkupLine("[red]InputLoadException during core solve method.[/]");
                 LogException(ex);
             }
         }
@@ -193,7 +194,7 @@ namespace Helpers.Structure
 
                 if (time == ExceptionTime)
                 {
-                    return $"[red]{time} (Exception)[/]";
+                    return $"[red]{time} (InputLoadException)[/]";
                 }
 
                 return $"[blue]{time}[/]";

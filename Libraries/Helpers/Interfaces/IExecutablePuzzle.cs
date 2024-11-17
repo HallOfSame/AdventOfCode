@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Helpers.Interfaces;
 
@@ -12,17 +13,22 @@ public interface IExecutionResult
 }
 
 /// <summary>
+/// Represents a puzzle that does not have a set steppable process and runs the solver in one action.
+/// </summary>
+public interface ISingleExecutionPuzzle : IExecutablePuzzle<IExecutionResult> {}
+
+/// <summary>
 /// Basic interface to represent a class can execute a puzzle.
 /// </summary>
-public interface IExecutablePuzzle
+public interface IExecutablePuzzle<out TProcessingResult>
 {
-    IExecutionResult ExecutePartOne();
+    TProcessingResult ExecutePartOne();
 
-    IExecutionResult ExecutePartTwo();
+    TProcessingResult ExecutePartTwo();
 
     /// <summary>
     /// Loads the puzzle input as a string.
     /// I think this will be safe to assume, basically every puzzle is a (possibly multiline) string at the end of the day.
     /// </summary>
-    void LoadInput(string puzzleInput);
+    Task LoadInput(string puzzleInput);
 }
