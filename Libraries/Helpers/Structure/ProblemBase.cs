@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 
 using Spectre.Console;
 using System.Threading.Tasks;
 
 namespace Helpers.Structure
 {
-    [Obsolete($"Replaced with {nameof(ExecutionPuzzle)} and {nameof(StepExecutionPuzzle)}")]
+    [Obsolete($"Replaced with ExecutionPuzzle and StepExecutionPuzzle")]
     public abstract class ProblemBase
     {
         public async Task<string> SolvePartOne()
