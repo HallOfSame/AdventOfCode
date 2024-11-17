@@ -8,11 +8,12 @@ window.AocCanvas = {
         const ctx = canvas.getContext("2d");
         ctx.canvas.width = width;
         ctx.canvas.height = height;
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         ctx.font = `${pixelSize}px square`;
 
         function drawText(x, y, text, color) {
-            const colorToUse = color || "black";
+            const colorToUse = color || "white";
             if (ctx.fillStyle !== colorToUse) {
                 ctx.fillStyle = colorToUse;
             }
