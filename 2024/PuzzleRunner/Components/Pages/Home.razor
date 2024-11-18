@@ -1,5 +1,7 @@
 ﻿@page "/"
 @using PuzzleRunner.Components.Shared
+@using InputStorageDatabase
+@using Microsoft.EntityFrameworkCore
 
 <PageTitle>Home</PageTitle>
 
@@ -8,3 +10,12 @@
 Welcome to your new app.
 <br />
 <BlazorCanvas />
+
+@inject AdventOfCodeContext DbContext
+@code
+{
+    protected override async Task OnInitializedAsync()
+    {
+        var allInputs = await DbContext.PuzzleInputs.ToListAsync();
+    }
+}

@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PuzzleDays", "PuzzleDays\Pu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PuzzleRunner", "PuzzleRunner\PuzzleRunner.csproj", "{B638DF38-F648-48A0-97A0-A077CFEE8B50}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InputStorageDatabase", "..\InputStorageDatabase\InputStorageDatabase.csproj", "{E60830DE-F5A4-420B-82BE-EFA363C3A9C4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{B638DF38-F648-48A0-97A0-A077CFEE8B50}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B638DF38-F648-48A0-97A0-A077CFEE8B50}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B638DF38-F648-48A0-97A0-A077CFEE8B50}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E60830DE-F5A4-420B-82BE-EFA363C3A9C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E60830DE-F5A4-420B-82BE-EFA363C3A9C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E60830DE-F5A4-420B-82BE-EFA363C3A9C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E60830DE-F5A4-420B-82BE-EFA363C3A9C4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

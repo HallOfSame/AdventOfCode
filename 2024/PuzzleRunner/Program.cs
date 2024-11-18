@@ -1,3 +1,4 @@
+using InputStorageDatabase;
 using MudBlazor.Services;
 using PuzzleRunner.Components;
 
@@ -7,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices();
+builder.Services.AddDatabase();
 
 var app = builder.Build();
 
@@ -25,5 +27,11 @@ app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+using(var scope = app.Services.CreateScope())
+using (var context = scope.ServiceProvider.GetRequiredService<AdventOfCodeContext>())
+{
+    context.Database.EnsureCreated();
+}
 
 app.Run();
