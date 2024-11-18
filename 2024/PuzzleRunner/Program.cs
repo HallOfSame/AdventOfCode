@@ -9,6 +9,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices();
 builder.Services.AddDatabase();
+builder.Services.AddLogging(logging => logging.AddConsole());
 
 var app = builder.Build();
 
