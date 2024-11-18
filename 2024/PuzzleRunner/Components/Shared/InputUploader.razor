@@ -1,0 +1,56 @@
+﻿@using InputStorageDatabase
+<MudGrid>
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudForm @ref="form" @bind-IsValid="@isValid" SuppressImplicitSubmission>
+                <MudTextField T="string" Label="Name" Required @bind-Value="name"/>
+                <MudTextField T="int?" Label="Year" Required @bind-Value="year" />
+                <MudTextField T="int?" Label="Day" Required @bind-Value="day" />
+                <div class="d-flex">
+                    <MudRadioGroup T="PuzzleInputType" Required>
+                        <MudRadio Value="@PuzzleInputType.Example">Example</MudRadio>
+                        <MudRadio Value="@PuzzleInputType.Personal">Personal</MudRadio>
+                    </MudRadioGroup>
+                </div>
+                <MudTextField T="string" Label="Input" Required @bind-Value="input" Lines="10" AutoGrow />
+                <MudButton OnClick="@SaveInput" Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!isValid)" Class="ml-auto">Save</MudButton>
+            </MudForm>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@inject AdventOfCodeContext DbContext
+@code {
+    private MudForm form;
+    private bool isValid;
+
+    private string? name;
+    private int? year = DateTime.Now.Year;
+    private int? day = DateTime.Now.Day;
+    private PuzzleInputType inputType = PuzzleInputType.Example;
+    private string? input;
+
+    private async Task SaveInput()
+    {
+        if (!form.IsValid)
+        {
+            return;
+        }
+
+        var newInput = new PuzzleInput
+        {
+            Name = name!,
+            Day = day!.Value,
+            Year = year!.Value,
+            Input = input!,
+            InputType = inputType
+        };
+
+        await DbContext.PuzzleInputs.AddAsync(newInput);
+        await DbContext.SaveChangesAsync();
+
+        await form.ResetAsync();
+
+    // TODO redirect... somewhere, might need an editor for this or just re-use this
+    }
+}

@@ -8,12 +8,12 @@ public class PuzzleInput
     public int InputId { get; set; }
     public int Year { get; set; }
     public int Day { get; set; }
-    public InputType InputType { get; set; }
+    public PuzzleInputType InputType { get; set; }
     public string Name { get; set; }
     public string Input { get; set; }
 }
 
-public enum InputType
+public enum PuzzleInputType
 {
     Example = 1,
     Personal = 2
