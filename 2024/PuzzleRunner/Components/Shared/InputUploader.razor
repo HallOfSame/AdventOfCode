@@ -1,32 +1,49 @@
 ﻿@using InputStorageDatabase
-<MudGrid>
-    <MudItem xs="12">
-        <MudPaper Class="pa-4">
-            <MudForm @ref="form" @bind-IsValid="@isValid" SuppressImplicitSubmission>
-                <MudTextField T="string" Label="Name" Required @bind-Value="name"/>
-                <MudTextField T="int?" Label="Year" Required @bind-Value="year" />
-                <MudTextField T="int?" Label="Day" Required @bind-Value="day" />
-                <div class="d-flex">
-                    <MudRadioGroup T="PuzzleInputType" Required>
-                        <MudRadio Value="@PuzzleInputType.Example">Example</MudRadio>
-                        <MudRadio Value="@PuzzleInputType.Personal">Personal</MudRadio>
-                    </MudRadioGroup>
-                </div>
-                <MudTextField T="string" Label="Input" Required @bind-Value="input" Lines="10" AutoGrow />
-                <MudButton OnClick="@SaveInput" Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!isValid)" Class="ml-auto">Save</MudButton>
-            </MudForm>
-        </MudPaper>
-    </MudItem>
-</MudGrid>
+<MudDialog Style="min-width: 600px;">
+    <TitleContent>
+        Load Input
+    </TitleContent>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudPaper Class="pa-4">
+                    <MudForm @ref="form" @bind-IsValid="@isValid" SuppressImplicitSubmission>
+                        <MudTextField T="string" Label="Name" Required @bind-Value="name"/>
+                        <MudTextField T="int?" Label="Year" Required @bind-Value="Year" />
+                        <MudTextField T="int?" Label="Day" Required @bind-Value="Day" />
+                        <div class="d-flex">
+                            <MudRadioGroup T="PuzzleInputType" @bind-Value="inputType">
+                                <MudRadio Value="@PuzzleInputType.Example">Example</MudRadio>
+                                <MudRadio Value="@PuzzleInputType.Personal">Personal</MudRadio>
+                            </MudRadioGroup>
+                        </div>
+                        <MudTextField T="string" Label="Input" Required @bind-Value="input" Lines="10" AutoGrow />
+                    </MudForm>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Disabled="@(!isValid)" OnClick="SaveInput">Save</MudButton>
+    </DialogActions>
+</MudDialog>
 
 @inject AdventOfCodeContext DbContext
 @code {
-    private MudForm form;
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public int? Year { get; set; } = DateTime.Now.Year;
+
+    [Parameter]
+    public int? Day { get; set; } = DateTime.Now.Day;
+
+    private MudForm form = null!;
     private bool isValid;
 
     private string? name;
-    private int? year = DateTime.Now.Year;
-    private int? day = DateTime.Now.Day;
     private PuzzleInputType inputType = PuzzleInputType.Example;
     private string? input;
 
@@ -40,8 +57,8 @@
         var newInput = new PuzzleInput
         {
             Name = name!,
-            Day = day!.Value,
-            Year = year!.Value,
+            Day = Day!.Value,
+            Year = Year!.Value,
             Input = input!,
             InputType = inputType
         };
@@ -51,6 +68,11 @@
 
         await form.ResetAsync();
 
-    // TODO redirect... somewhere, might need an editor for this or just re-use this
+        MudDialog.Close(DialogResult.Ok(newInput.InputId));
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
     }
 }

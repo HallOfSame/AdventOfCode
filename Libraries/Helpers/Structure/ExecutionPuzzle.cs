@@ -5,7 +5,7 @@ using Helpers.Interfaces;
 
 namespace Helpers.Structure
 {
-    public abstract class SingleExecutionPuzzle<TExecutionState> : ExecutionPuzzle<IExecutionResult, TExecutionState>
+    public abstract class SingleExecutionPuzzle<TExecutionState> : ExecutionPuzzle<ExecutionResult, TExecutionState>
         where TExecutionState : IExecutionState
     {}
 
@@ -21,11 +21,11 @@ namespace Helpers.Structure
             }
         }
 
-        public TProcessingResult ExecutePartOne()
+        public async Task<TProcessingResult> ExecutePartOne()
         {
             try
             {
-                return ExecutePuzzlePartOne();
+                return await ExecutePuzzlePartOne();
             }
             catch (Exception ex)
             {
@@ -33,11 +33,11 @@ namespace Helpers.Structure
             }
         }
 
-        public TProcessingResult ExecutePartTwo()
+        public async Task<TProcessingResult> ExecutePartTwo()
         {
             try
             {
-                return ExecutePuzzlePartTwo();
+                return await ExecutePuzzlePartTwo();
             }
             catch (Exception ex)
             {
@@ -57,8 +57,10 @@ namespace Helpers.Structure
             }
         }
 
+        public abstract PuzzleInfo Info { get; }
+
         protected abstract Task<TExecutionState> LoadInputState(string puzzleInput);
-        protected abstract TProcessingResult ExecutePuzzlePartOne();
-        protected abstract TProcessingResult ExecutePuzzlePartTwo();
+        protected abstract Task<TProcessingResult> ExecutePuzzlePartOne();
+        protected abstract Task<TProcessingResult> ExecutePuzzlePartTwo();
     }
 }

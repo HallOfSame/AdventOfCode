@@ -1,0 +1,35 @@
+﻿@using Helpers.Structure
+@using Helpers.Interfaces
+
+<MudDataGrid T="PuzzleInfo" Items="@puzzles" Style="height: 100%">
+    <Columns>
+        <PropertyColumn Property="x => x.Year" />
+        <PropertyColumn Property="x => x.Day" />
+        <PropertyColumn Property="x => x.Name" />
+        <TemplateColumn CellClass="d-flex justify-end">
+            <CellTemplate>
+                <MudStack Row>
+                    <MudButton OnClick="() => GoToPuzzle(context.Item)" Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Primary">Open</MudButton>
+                </MudStack>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</MudDataGrid>
+
+@inject IEnumerable<IPuzzle> Puzzles
+@inject NavigationManager NavigationManager
+@code {
+    private PuzzleInfo[] puzzles = [];
+
+    protected override void OnInitialized()
+    {
+        puzzles = Puzzles.Select(x => x.Info)
+            .ToArray();
+        base.OnInitialized();
+    }
+
+    private void GoToPuzzle(PuzzleInfo puzzle)
+    {
+        NavigationManager.NavigateTo($"puzzle/{puzzle.Year}/{puzzle.Day}");
+    }
+}

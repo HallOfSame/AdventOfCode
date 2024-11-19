@@ -1,0 +1,51 @@
+﻿@page "/puzzle/{Year:int}/{Day:int}"
+@using Helpers.Interfaces
+@using PuzzleRunner.Components.Shared
+<MudPaper Class="pa-16 ma-2">
+    <MudCard>
+        <MudCardContent>
+            <MudText Typo="Typo.h5">@puzzle.Info.Name</MudText>
+            <MudText Typo="Typo.body2">@puzzle.Info.Year Day @puzzle.Info.Day</MudText>
+            <MudLink Typo="Typo.body2" Target="_blank" Href="@($"https://adventofcode.com/{puzzle.Info.Year}/day/{puzzle.Info.Day}")">AoC Link</MudLink>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Variant="Variant.Text" Color="Color.Primary">Execute</MudButton>
+            <MudButton OnClick="OpenInputLoader" Variant="Variant.Text" Color="Color.Primary">Load Input</MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudPaper>
+
+@inject IPuzzleContainer PuzzleContainer
+@inject IDialogService DialogService
+@code {
+    [Parameter]
+    public int Year { get; set; }
+
+    [Parameter]
+    public int Day { get; set; }
+
+    private IPuzzle puzzle = null!;
+    private bool canVisualize;
+    private bool canStep;
+
+    protected override void OnInitialized()
+    {
+        puzzle = PuzzleContainer.GetPuzzle(Year, Day);
+        var puzzleType = puzzle.GetType();
+        canVisualize = puzzleType.IsAssignableTo(typeof(IVisualize2d));
+        canStep = puzzleType.IsAssignableTo(typeof(IStepExecutionPuzzle));
+        base.OnInitialized();
+    }
+
+    private async Task OpenInputLoader()
+    {
+        var parameters = new DialogParameters<InputUploader>
+        {
+            { x => x.Year, puzzle.Info.Year },
+            { x => x.Day, puzzle.Info.Day },
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = false };
+
+        await DialogService.ShowAsync<InputUploader>("Upload Input", parameters, options);
+    }
+}

@@ -1,5 +1,7 @@
+using Helpers;
 using InputStorageDatabase;
 using MudBlazor.Services;
+using PuzzleDays;
 using PuzzleRunner.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +11,8 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices();
 builder.Services.AddDatabase();
+builder.Services.AddPuzzleStructure();
+builder.Services.Add2024Puzzles();
 builder.Services.AddLogging(logging => logging.AddConsole());
 
 var app = builder.Build();

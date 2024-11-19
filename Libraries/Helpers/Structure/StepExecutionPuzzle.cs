@@ -1,37 +1,35 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Helpers.Exceptions;
 using Helpers.Interfaces;
 
 namespace Helpers.Structure
 {
-    public abstract class StepExecutionPuzzle<TStepExecutionResult, TExecutionState> : ExecutionPuzzle<TStepExecutionResult, TExecutionState>, IStepExecutionPuzzle<TStepExecutionResult>, ISingleStepExecutable<TStepExecutionResult> where TExecutionState : IExecutionState where TStepExecutionResult : IStepExecutionResult, new()
+    public abstract class StepExecutionPuzzle<TExecutionState> : ExecutionPuzzle<StepExecutionResult, TExecutionState>, IStepExecutionPuzzle, ISingleStepExecutable where TExecutionState : IExecutionState
     {
-        private readonly JsonStateCopier stateCopier;
-
-        protected StepExecutionPuzzle()
-        {
-            stateCopier = new JsonStateCopier();
-        }
+        private readonly JsonStateCopier stateCopier = new();
 
         protected TExecutionState? CurrentState;
 
-        public void ResetToInitialState()
+        public Task ResetToInitialState()
         {
             CurrentState = stateCopier.Copy(InitialState);
+            return Task.CompletedTask;
         }
 
-        public void RevertState(IExecutionState state)
+        public Task RevertState(IExecutionState state)
         {
             CurrentState = stateCopier.Copy((TExecutionState)state);
+            return Task.CompletedTask;
         }
 
-        public TStepExecutionResult ExecuteStepPartOne()
+        public async Task<StepExecutionResult> ExecuteStepPartOne()
         {
             try
             {
-                var (complete, puzzleResult) = ExecutePuzzleStepPartOne();
+                var (complete, puzzleResult) = await ExecutePuzzleStepPartOne();
 
-                var result = new TStepExecutionResult
+                var result = new StepExecutionResult
                 {
                     IsCompleted = complete,
                     Result = puzzleResult,
@@ -42,7 +40,7 @@ namespace Helpers.Structure
             }
             catch (Exception ex)
             {
-                return new TStepExecutionResult
+                return new StepExecutionResult
                 {
                     IsCompleted = false,
                     Exception = new UnhandledExecutionException(ex)
@@ -50,13 +48,13 @@ namespace Helpers.Structure
             }
         }
 
-        public TStepExecutionResult ExecuteStepPartTwo()
+        public async Task<StepExecutionResult> ExecuteStepPartTwo()
         {
             try
             {
-                var (complete, puzzleResult) = ExecutePuzzleStepPartTwo();
+                var (complete, puzzleResult) = await ExecutePuzzleStepPartTwo();
 
-                var result = new TStepExecutionResult
+                var result = new StepExecutionResult
                 {
                     IsCompleted = complete,
                     Result = puzzleResult,
@@ -67,7 +65,7 @@ namespace Helpers.Structure
             }
             catch (Exception ex)
             {
-                return new TStepExecutionResult
+                return new StepExecutionResult
                 {
                     IsCompleted = false,
                     Exception = new UnhandledExecutionException(ex)
@@ -75,31 +73,31 @@ namespace Helpers.Structure
             }
         }
 
-        protected override TStepExecutionResult ExecutePuzzlePartOne()
+        protected override async Task<StepExecutionResult> ExecutePuzzlePartOne()
         {
-            TStepExecutionResult result;
+            StepExecutionResult result;
 
             do
             {
-                result = ExecuteStepPartOne();
+                result = await ExecuteStepPartOne();
             } while (!result.IsCompleted);
 
             return result;
         }
 
-        protected override TStepExecutionResult ExecutePuzzlePartTwo()
+        protected override async Task<StepExecutionResult> ExecutePuzzlePartTwo()
         {
-            TStepExecutionResult result;
+            StepExecutionResult result;
 
             do
             {
-                result = ExecuteStepPartTwo();
+                result = await ExecuteStepPartTwo();
             } while (!result.IsCompleted);
 
             return result;
         }
 
-        protected abstract (bool isComplete, string? result) ExecutePuzzleStepPartOne();
-        protected abstract (bool isComplete, string? result) ExecutePuzzleStepPartTwo();
+        protected abstract Task<(bool isComplete, string? result)> ExecutePuzzleStepPartOne();
+        protected abstract Task<(bool isComplete, string? result)> ExecutePuzzleStepPartTwo();
     }
 }

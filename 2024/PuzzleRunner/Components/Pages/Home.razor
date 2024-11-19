@@ -1,21 +1,8 @@
 ﻿@page "/"
 @using PuzzleRunner.Components.Shared
-@using InputStorageDatabase
-@using Microsoft.EntityFrameworkCore
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Advent of Code</PageTitle>
 
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
-<br />
-<InputUploader />
-
-@inject AdventOfCodeContext DbContext
-@code
-{
-    protected override async Task OnInitializedAsync()
-    {
-        var allInputs = await DbContext.PuzzleInputs.ToListAsync();
-    }
-}
+<MudPaper Class="pa-16 ma-2" Style="height: calc(100vh - var(--mud-appbar-height) - 32px)">
+    <PuzzleGrid />
+</MudPaper>
