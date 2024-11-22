@@ -12,7 +12,7 @@
             <MudSelect @bind-Value="puzzleInput">
                 @foreach (var input in availableInputs)
                 {
-                    <MudSelectItem Value="input">
+                    <MudSelectItem @key="input.InputId" Value="input">
                         @input.Name (@input.InputType)
                     </MudSelectItem>
                 }
@@ -33,6 +33,7 @@
 @inject IDialogService DialogService
 @inject AdventOfCodeContext AdventOfCodeContext
 @code {
+
     [Parameter]
     public int Year { get; set; }
 
@@ -61,7 +62,14 @@
         };
         var options = new DialogOptions { CloseOnEscapeKey = false };
 
-        await DialogService.ShowAsync<InputUploader>("Upload Input", parameters, options);
+        var dialog = await DialogService.ShowAsync<InputUploader>("Upload Input", parameters, options);
+
+        var result = await dialog.Result;
+
+        if (result?.Data is int newInputId)
+        {
+            availableInputs.Add(AdventOfCodeContext.PuzzleInputs.Single(x => x.InputId == newInputId));
+        }
     }
 
     private async Task LoadSelectedInput()
