@@ -5,7 +5,7 @@ using Helpers.Interfaces;
 
 namespace Helpers.Structure
 {
-    public abstract class StepExecutionPuzzle<TExecutionState> : ExecutionPuzzle<StepExecutionResult, TExecutionState>, IStepExecutionPuzzle, ISingleStepExecutable where TExecutionState : IExecutionState
+    public abstract class StepExecutionPuzzle<TExecutionState> : ExecutionPuzzle<StepExecutionResult, TExecutionState>, IStepExecutionPuzzle where TExecutionState : IExecutionState
     {
         private readonly JsonStateCopier stateCopier = new();
 

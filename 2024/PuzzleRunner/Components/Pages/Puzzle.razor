@@ -1,5 +1,7 @@
 ﻿@page "/puzzle/{Year:int}/{Day:int}"
 @using Helpers.Interfaces
+@using InputStorageDatabase
+@using InputStorageDatabase.Extensions
 @using PuzzleRunner.Components.Shared
 <MudPaper Class="pa-16 ma-2">
     <MudCard>
@@ -7,16 +9,29 @@
             <MudText Typo="Typo.h5">@puzzle.Info.Name</MudText>
             <MudText Typo="Typo.body2">@puzzle.Info.Year Day @puzzle.Info.Day</MudText>
             <MudLink Typo="Typo.body2" Target="_blank" Href="@($"https://adventofcode.com/{puzzle.Info.Year}/day/{puzzle.Info.Day}")">AoC Link</MudLink>
+            <MudSelect @bind-Value="puzzleInput">
+                @foreach (var input in availableInputs)
+                {
+                    <MudSelectItem Value="input">
+                        @input.Name (@input.InputType)
+                    </MudSelectItem>
+                }
+            </MudSelect>
         </MudCardContent>
         <MudCardActions>
-            <MudButton Variant="Variant.Text" Color="Color.Primary">Execute</MudButton>
-            <MudButton OnClick="OpenInputLoader" Variant="Variant.Text" Color="Color.Primary">Load Input</MudButton>
+            <MudButton OnClick="LoadSelectedInput" Disabled="puzzleInput == null" Variant="Variant.Text" Color="Color.Primary">Initialize</MudButton>
+            <MudButton OnClick="OpenInputUploader" Variant="Variant.Text" Color="Color.Primary">Create Input</MudButton>
         </MudCardActions>
     </MudCard>
+    @if (readyToExecute)
+    {
+        <PuzzleExecution Puzzle="puzzle" />
+    }
 </MudPaper>
 
 @inject IPuzzleContainer PuzzleContainer
 @inject IDialogService DialogService
+@inject AdventOfCodeContext AdventOfCodeContext
 @code {
     [Parameter]
     public int Year { get; set; }
@@ -25,19 +40,19 @@
     public int Day { get; set; }
 
     private IPuzzle puzzle = null!;
-    private bool canVisualize;
-    private bool canStep;
+    private List<PuzzleInput> availableInputs = [];
+    private PuzzleInput? puzzleInput;
+    private bool readyToExecute;
 
     protected override void OnInitialized()
     {
         puzzle = PuzzleContainer.GetPuzzle(Year, Day);
-        var puzzleType = puzzle.GetType();
-        canVisualize = puzzleType.IsAssignableTo(typeof(IVisualize2d));
-        canStep = puzzleType.IsAssignableTo(typeof(IStepExecutionPuzzle));
+        availableInputs = AdventOfCodeContext.GetInputsForDay(Year, Day)
+            .ToList();
         base.OnInitialized();
     }
 
-    private async Task OpenInputLoader()
+    private async Task OpenInputUploader()
     {
         var parameters = new DialogParameters<InputUploader>
         {
@@ -47,5 +62,12 @@
         var options = new DialogOptions { CloseOnEscapeKey = false };
 
         await DialogService.ShowAsync<InputUploader>("Upload Input", parameters, options);
+    }
+
+    private async Task LoadSelectedInput()
+    {
+        await puzzle.LoadInput(puzzleInput!.Input);
+
+        readyToExecute = true;
     }
 }

@@ -26,15 +26,15 @@ public interface IExecutablePuzzle<TProcessingResult> : IPuzzle
     Task<TProcessingResult> ExecutePartOne();
 
     Task<TProcessingResult> ExecutePartTwo();
+}
+
+public interface IPuzzle
+{
+    PuzzleInfo Info { get; }
 
     /// <summary>
     /// Loads the puzzle input as a string.
     /// I think this will be safe to assume, basically every puzzle is a (possibly multiline) string at the end of the day.
     /// </summary>
     Task LoadInput(string puzzleInput);
-}
-
-public interface IPuzzle
-{
-    PuzzleInfo Info { get; }
 }

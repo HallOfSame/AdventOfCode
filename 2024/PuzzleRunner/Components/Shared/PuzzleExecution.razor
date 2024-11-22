@@ -1,0 +1,81 @@
+﻿@using Helpers.Drawing
+@using Helpers.Interfaces
+<MudCard>
+    @if (visualizer is not null)
+    {
+        <BlazorCanvas CoordinatesToDraw="CurrentVisual" />
+    }
+    @if (stepExecutionPuzzle is not null)
+    {
+        @* TODO need a select between pt 1 and 2 and to handle cleaning up when switched *@
+        <div style="display: flex; gap: 16px;">
+            <MudButton OnClick="ResetPuzzle">Reset</MudButton>
+            <MudButton OnClick="PrevStep" StartIcon="@Icons.Material.Filled.ArrowLeft" />
+            <MudButton OnClick="NextStep" StartIcon="@Icons.Material.Filled.ArrowRight" />
+        </div>
+    }
+    else
+    {
+        <div style="display: flex; gap: 16px;">
+            <MudButton OnClick="ExecutePartOne">Part One</MudButton>
+            <MudButton OnClick="ExecutePartTwo">Part Two</MudButton>
+        </div>
+    }
+
+    @* TODO display results nice *@
+    <div>
+        @(currentResult != null ? currentResult.Result : "No result")
+        @(currentResult != null ? currentResult.Exception?.ToString() : "No exception")
+    </div>
+</MudCard>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public IPuzzle Puzzle { get; set; } = null!;
+
+    private IStepExecutionPuzzle? stepExecutionPuzzle;
+    private ISingleExecutionPuzzle? singleExecutionPuzzle;
+    private IVisualize2d? visualizer;
+    private ExecutionResult? currentResult;
+
+    private readonly DrawableCoordinate[] emptyCoordinates = [];
+
+    private DrawableCoordinate[] CurrentVisual => visualizer is not null ? visualizer.GetCoordinates() : emptyCoordinates;
+
+    protected override void OnInitialized()
+    {
+        stepExecutionPuzzle = Puzzle as IStepExecutionPuzzle;
+        singleExecutionPuzzle = Puzzle as ISingleExecutionPuzzle;
+        // ReSharper disable once SuspiciousTypeConversion.Global
+        visualizer = Puzzle as IVisualize2d;
+
+        base.OnInitialized();
+    }
+
+    private async Task ResetPuzzle()
+    {
+        await stepExecutionPuzzle!.ResetToInitialState();
+    }
+
+    private async Task NextStep()
+    {
+        currentResult = await stepExecutionPuzzle!.ExecuteStepPartOne();
+    }
+
+    private async Task PrevStep()
+    {
+        // TODO need to null check some of this probably
+        await stepExecutionPuzzle!.RevertState(((StepExecutionResult)currentResult!).CurrentState!);
+    }
+
+    private async Task ExecutePartOne()
+    {
+        currentResult = await singleExecutionPuzzle!.ExecutePartOne();
+    }
+
+    private async Task ExecutePartTwo()
+    {
+        currentResult = await singleExecutionPuzzle!.ExecutePartTwo();
+    }
+}

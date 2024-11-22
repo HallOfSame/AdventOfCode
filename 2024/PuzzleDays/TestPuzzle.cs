@@ -1,4 +1,5 @@
-﻿using Helpers.FileReaders;
+﻿using Helpers.Drawing;
+using Helpers.FileReaders;
 using Helpers.Interfaces;
 using Helpers.Maps;
 using Helpers.Structure;
@@ -8,7 +9,7 @@ namespace PuzzleDays
     /// <summary>
     /// The old code mostly copied and not step based
     /// </summary>
-    public class TestPuzzle : ISingleExecutionPuzzle
+    public class TestPuzzle : ISingleExecutionPuzzle, IVisualize2d
     {
         public PuzzleInfo Info { get; } = new(2023, 16, "The Floor Will Be Lava");
 
@@ -45,6 +46,8 @@ namespace PuzzleDays
                 .ToString();
         }
 
+        private HashSet<Coordinate> beamVisited = [];
+
         private int GetEnergizeCount(Beam startingBeam)
         {
             var beams = new List<Beam>
@@ -52,7 +55,7 @@ namespace PuzzleDays
                 startingBeam
             };
 
-            var visited = new HashSet<Coordinate>();
+            beamVisited = new HashSet<Coordinate>();
 
             var handled = new HashSet<(Coordinate, Direction)>();
 
@@ -65,13 +68,13 @@ namespace PuzzleDays
                 {
                     if (beam.CurrentLocation is null)
                     {
-                        visited.UnionWith(beam.VisitedCoordinates);
+                        beamVisited.UnionWith(beam.VisitedCoordinates);
                         continue;
                     }
 
                     if (handled.Contains((beam.CurrentLocation, beam.CurrentDirection)))
                     {
-                        visited.UnionWith(beam.VisitedCoordinates);
+                        beamVisited.UnionWith(beam.VisitedCoordinates);
                         // Another beam has been here, so ignore it
                         continue;
                     }
@@ -115,7 +118,7 @@ namespace PuzzleDays
                 }
 
                 // -1 because our starting x = -1 coordinate isn't real
-                var energizedCount = visited.Count - 1;
+                var energizedCount = beamVisited.Count - 1;
 
                 //coordinateMap.Keys.Draw(x =>
                 //{
@@ -367,6 +370,20 @@ namespace PuzzleDays
             public Direction CurrentDirection { get; set; }
 
             public HashSet<Coordinate> VisitedCoordinates { get; }
+        }
+
+        public DrawableCoordinate[] GetCoordinates()
+        {
+            // TODO want to make a helper function for stuff like this
+            // Takes in predicates to pick the color or something
+            return coordinateMap.Select(x => new DrawableCoordinate
+                {
+                    X = x.Key.X,
+                    Y = x.Key.Y,
+                    Text = beamVisited.Contains(x.Key) ? "#" : x.Value.ToString(),
+                    Color = beamVisited.Contains(x.Key) ? "yellow" : "white"
+                })
+                .ToArray();
         }
     }
 }

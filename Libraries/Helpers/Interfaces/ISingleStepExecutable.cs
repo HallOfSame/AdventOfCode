@@ -6,28 +6,17 @@ namespace Helpers.Interfaces;
 /// <summary>
 /// Represents a puzzle that executes the solver in a step-by-step process that can be run one step at a time.
 /// </summary>
-public interface IStepExecutionPuzzle : IExecutablePuzzle<StepExecutionResult> {}
+public interface IStepExecutionPuzzle : IExecutablePuzzle<StepExecutionResult>, ISingleStepExecutable {}
 
 /// <summary>
 /// To represent the return from doing one step of work.
 /// </summary>
-public class StepExecutionResult
+public class StepExecutionResult : ExecutionResult
 {
-    /// <summary>
-    /// Set if an error occurred during this step.
-    /// </summary>
-    public Exception? Exception { get; init; }
-    
     /// <summary>
     /// <c>true</c> when this was the final step.
     /// </summary>
     public bool IsCompleted { get; init; }
-
-    /// <summary>
-    /// Set when <see cref="IsCompleted"/> is <c>true</c>.
-    /// TODO maybe set this on each step, idk if that would be useful.
-    /// </summary>
-    public string? Result { get; init; }
 
     /// <summary>
     /// Current state after processing this step.

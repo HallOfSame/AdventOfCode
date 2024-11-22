@@ -43,7 +43,8 @@ public class GridFileReader
 
     public async Task<List<CoordinateWithCharacter>> ReadFromString(string input)
     {
-        var strings = input.Split(Environment.NewLine).ToList();
+        // TODO database only gives \n I guess?
+        var strings = input.Split('\n').ToList();
 
         // Reverse to make the origin the bottom left
         strings.Reverse();

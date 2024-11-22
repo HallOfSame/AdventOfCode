@@ -1,5 +1,4 @@
-﻿@using Helpers.FileReaders
-
+﻿@using Helpers.Drawing
 <h3>Canvas Mouse Move Example</h3>
 
 <canvas id="canvasToDraw" width="400" height="400" style="border: 1px solid black;"></canvas>
@@ -7,109 +6,89 @@
 <p>Mouse Coordinates: X = @mouseX, Y = @mouseY</p>
 
 @inject IJSRuntime JsRuntime
+
 @code {
+
+    [Parameter]
+    public DrawableCoordinate[] CoordinatesToDraw { get; set; } = [];
+
+    private DrawableCoordinate[] prevDrawableCoordinates = [];
+
     private double mouseX;
     private double mouseY;
 
     private DotNetObjectReference<BlazorCanvas>? objRef;
+    private bool waitingToDraw;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // TODO width height and pixel size all probably need to scale based on input
+        if (CoordinatesToDraw != prevDrawableCoordinates && CoordinatesToDraw.Length > 0)
+        {
+            if (objRef != null)
+            {
+                await Draw();
+            }
+            else
+            {
+                waitingToDraw = true;
+            }
+        }
+
+        await base.OnParametersSetAsync();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            var input = @".|...\....
-|.-.\.....
-.....|-...
-........|.
-..........
-.........\
-..../.\\..
-.-.-/..|..
-.|....-|.\
-..//.|....";
-
-            var coordinateMap = (await new GridFileReader().ReadFromString(input)).ToDictionary(x => x.Coordinate, x => x.Value);
-
-            // TODO this should use drawable coordinates
             objRef = DotNetObjectReference.Create(this);
             await JsRuntime.InvokeVoidAsync("AocCanvas.enableCoordinateDisplay", "canvasToDraw", objRef);
 
-            var pixels = coordinateMap.Select(x => new Pixel
+            if (waitingToDraw)
             {
-                Text = x.Value.ToString(),
-                X = (int)x.Key.X,
-                Y = (int)x.Key.Y,
-                Color = x.Value == '/' ? "blue" : null
-            });
+                await Draw();
+            }
+        }
+    }
 
-            pixels.Where(x => x.Color == "blue")
-                .ToList()
-                .ForEach(x =>
-                {
-                    Console.WriteLine($"{x.X}, {x.Y}");
-                });
-
-            var test = new ImageData
+    private async Task Draw()
+    {
+        var image = new ImageData
             {
                 PixelSize = 25,
-                Pixels = pixels.ToArray()
+                Pixels = CoordinatesToDraw
             };
 
-            // test.Pixels[0] = new Pixel
-            // {
-            //     Color = "green",
-            //     X = 0,
-            //     Y = 0
-            // };
-
-            // test.Pixels[1] = new Pixel
-            // {
-            //     Color = "blue",
-            //     X = 1,
-            //     Y = 0
-            // };
-
-            // test.Pixels[2] = new Pixel
-            // {
-            //     Color = "red",
-            //     X = 2,
-            //     Y = 0
-            // };
-
-            // test.Pixels[3] = new Pixel
-            // {
-            //     Color = "yellow",
-            //     X = 3,
-            //     Y = 0
-            // };
-
-            // test.Pixels[4] = new Pixel
-            // {
-            //     Text = "Z",
-            //     X = 2,
-            //     Y = 1
-            // };
-
-            await JsRuntime.InvokeVoidAsync("AocCanvas.draw", "canvasToDraw", test);
-        }
+        // TODO the js probably needs an update for the new format
+        await JsRuntime.InvokeVoidAsync("AocCanvas.draw", "canvasToDraw", image);
     }
 
     [JSInvokable]
     public void OnCanvasMouseMove(double x, double y)
     {
-        var height = 9;
+        var height = (int)CoordinatesToDraw.Max(c => c.Y);
         var pixelSize = 25;
-        x = Math.Floor(x / 25);
-        y = Math.Floor(y / 25);
+        x = Math.Floor(x / pixelSize);
+        y = Math.Floor(y / pixelSize);
         y = -y + height;
+
+        // ReSharper disable CompareOfFloatsByEqualityOperator
+        if (x == mouseX && y == mouseY)
+        {
+            return;
+        }
+        // ReSharper restore CompareOfFloatsByEqualityOperator
+
         mouseX = x;
         mouseY = y;
-        // TODO re-render only if number changed
-        StateHasChanged(); 
+
+        StateHasChanged();
     }
 
     public void Dispose()
     {
         objRef?.Dispose();
     }
+
 }
