@@ -9,44 +9,37 @@ namespace PuzzleDays
     /// <summary>
     /// The old code mostly copied and not step based
     /// </summary>
-    public class TestPuzzle : ISingleExecutionPuzzle, IVisualize2d
+    public class TestPuzzle : SingleExecutionPuzzle<Dictionary<Coordinate, char>>, IVisualize2d
     {
-        public PuzzleInfo Info { get; } = new(2023, 16, "The Floor Will Be Lava");
+        public override PuzzleInfo Info { get; } = new(2023, 16, "The Floor Will Be Lava");
 
-
-        public async Task<ExecutionResult> ExecutePartOne()
+        protected override async Task<Dictionary<Coordinate, char>> LoadInputState(string puzzleInput)
         {
-            var res = await SolvePartOneInternal();
-            return new ExecutionResult
-            {
-                Result = res
-            };
+            coordinateMap = (await new GridFileReader().ReadFromString(puzzleInput)).ToDictionary(x => x.Coordinate, x => x.Value);
+            return coordinateMap;
         }
 
-        public async Task<ExecutionResult> ExecutePartTwo()
+        protected override async Task<string> ExecutePuzzlePartOne()
         {
-            var res = await SolvePartTwoInternal();
-            return new ExecutionResult
-            {
-                Result = res
-            };
+            totalBeamVisited.Clear();
+            return await SolvePartOneInternal();
         }
 
-        public async Task LoadInput(string puzzleInput)
+        protected override async Task<string> ExecutePuzzlePartTwo()
         {
-            coordinateMap =
-                (await new GridFileReader().ReadFromString(puzzleInput)).ToDictionary(x => x.Coordinate, x => x.Value);
+            totalBeamVisited.Clear();
+            return await SolvePartTwoInternal();
         }
 
-        private async Task<string> SolvePartOneInternal()
+        private Task<string> SolvePartOneInternal()
         {
             var maxY = coordinateMap.Keys.Max(x => x.Y);
 
-            return GetEnergizeCount(new Beam(new Coordinate(-1, maxY), Direction.East))
-                .ToString();
+            return Task.FromResult(GetEnergizeCount(new Beam(new Coordinate(-1, maxY), Direction.East))
+                                       .ToString());
         }
 
-        private HashSet<Coordinate> beamVisited = [];
+        private readonly HashSet<Coordinate> totalBeamVisited = [];
 
         private int GetEnergizeCount(Beam startingBeam)
         {
@@ -55,7 +48,7 @@ namespace PuzzleDays
                 startingBeam
             };
 
-            beamVisited = new HashSet<Coordinate>();
+            var beamVisited = new HashSet<Coordinate>();
 
             var handled = new HashSet<(Coordinate, Direction)>();
 
@@ -130,6 +123,11 @@ namespace PuzzleDays
                 //    return coordinateMap[x]
                 //        .ToString();
                 //});
+
+                lock (totalBeamVisited)
+                {
+                    totalBeamVisited.UnionWith(beamVisited);
+                }
 
                 return energizedCount;
             }
@@ -337,16 +335,13 @@ namespace PuzzleDays
             return maxValue.ToString();
         }
 
-        private Dictionary<Coordinate, char> coordinateMap;
+        private Dictionary<Coordinate, char> coordinateMap = [];
 
-        class Beam
+        private class Beam
         {
             public Beam(Coordinate loc, Direction d)
             {
-                VisitedCoordinates = new HashSet<Coordinate>
-                {
-                    loc
-                };
+                VisitedCoordinates = [loc];
                 CurrentLocation = loc;
                 CurrentDirection = d;
             }
@@ -380,8 +375,8 @@ namespace PuzzleDays
                 {
                     X = x.Key.X,
                     Y = x.Key.Y,
-                    Text = beamVisited.Contains(x.Key) ? "#" : x.Value.ToString(),
-                    Color = beamVisited.Contains(x.Key) ? "yellow" : "white"
+                    Text = totalBeamVisited.Contains(x.Key) ? "#" : x.Value.ToString(),
+                    Color = totalBeamVisited.Contains(x.Key) ? "yellow" : "white"
                 })
                 .ToArray();
         }

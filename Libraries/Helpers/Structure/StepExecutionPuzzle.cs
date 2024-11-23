@@ -5,7 +5,7 @@ using Helpers.Interfaces;
 
 namespace Helpers.Structure
 {
-    public abstract class StepExecutionPuzzle<TExecutionState> : ExecutionPuzzle<StepExecutionResult, TExecutionState>, IStepExecutionPuzzle where TExecutionState : IExecutionState
+    public abstract class StepExecutionPuzzle<TExecutionState> : ExecutionPuzzle<StepExecutionResult, TExecutionState>, IStepExecutionPuzzle
     {
         private readonly JsonStateCopier stateCopier = new();
 
@@ -17,7 +17,7 @@ namespace Helpers.Structure
             return Task.CompletedTask;
         }
 
-        public Task RevertState(IExecutionState state)
+        public Task RevertState(object state)
         {
             CurrentState = stateCopier.Copy((TExecutionState)state);
             return Task.CompletedTask;
@@ -73,7 +73,7 @@ namespace Helpers.Structure
             }
         }
 
-        protected override async Task<StepExecutionResult> ExecutePuzzlePartOne()
+        protected override async Task<string> ExecutePuzzlePartOne()
         {
             StepExecutionResult result;
 
@@ -82,10 +82,10 @@ namespace Helpers.Structure
                 result = await ExecuteStepPartOne();
             } while (!result.IsCompleted);
 
-            return result;
+            return result.Result!;
         }
 
-        protected override async Task<StepExecutionResult> ExecutePuzzlePartTwo()
+        protected override async Task<string> ExecutePuzzlePartTwo()
         {
             StepExecutionResult result;
 
@@ -94,7 +94,7 @@ namespace Helpers.Structure
                 result = await ExecuteStepPartTwo();
             } while (!result.IsCompleted);
 
-            return result;
+            return result.Result!;
         }
 
         protected abstract Task<(bool isComplete, string? result)> ExecutePuzzleStepPartOne();

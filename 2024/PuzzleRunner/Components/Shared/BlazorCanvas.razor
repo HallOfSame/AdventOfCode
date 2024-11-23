@@ -1,7 +1,7 @@
 ﻿@using Helpers.Drawing
 <h3>Canvas Mouse Move Example</h3>
 
-<canvas id="canvasToDraw" width="400" height="400" style="border: 1px solid black;"></canvas>
+<canvas id="canvasToDraw" style="border: 1px solid black;"></canvas>
 
 <p>Mouse Coordinates: X = @mouseX, Y = @mouseY</p>
 
@@ -19,10 +19,11 @@
 
     private DotNetObjectReference<BlazorCanvas>? objRef;
     private bool waitingToDraw;
+    private int pixelSize = 25;
 
     protected override async Task OnParametersSetAsync()
     {
-        // TODO width height and pixel size all probably need to scale based on input
+        // TODO pixel size probably needs to scale based on input
         if (CoordinatesToDraw != prevDrawableCoordinates && CoordinatesToDraw.Length > 0)
         {
             if (objRef != null)
@@ -56,19 +57,22 @@
     {
         var image = new ImageData
             {
-                PixelSize = 25,
+                PixelSize = pixelSize,
                 Pixels = CoordinatesToDraw
             };
 
-        // TODO the js probably needs an update for the new format
         await JsRuntime.InvokeVoidAsync("AocCanvas.draw", "canvasToDraw", image);
     }
 
     [JSInvokable]
     public void OnCanvasMouseMove(double x, double y)
     {
+        if (CoordinatesToDraw.Length == 0)
+        {
+            return;
+        }
+
         var height = (int)CoordinatesToDraw.Max(c => c.Y);
-        var pixelSize = 25;
         x = Math.Floor(x / pixelSize);
         y = Math.Floor(y / pixelSize);
         y = -y + height;

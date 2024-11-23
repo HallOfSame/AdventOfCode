@@ -3,15 +3,18 @@
 <MudCard>
     @if (visualizer is not null)
     {
-        <BlazorCanvas CoordinatesToDraw="CurrentVisual" />
+        <BlazorCanvas CoordinatesToDraw="currentVisual" />
     }
     @if (stepExecutionPuzzle is not null)
     {
-        @* TODO need a select between pt 1 and 2 and to handle cleaning up when switched *@
         <div style="display: flex; gap: 16px;">
+            <MudSelect T="int" HelperText="Puzzle Part" Value="puzzlePartToExecute" ValueChanged="newVal => OnPartToExecuteChange(newVal)">
+                <MudSelectItem Value="1">One</MudSelectItem>
+                <MudSelectItem Value="2">Two</MudSelectItem>
+            </MudSelect>
             <MudButton OnClick="ResetPuzzle">Reset</MudButton>
-            <MudButton OnClick="PrevStep" StartIcon="@Icons.Material.Filled.ArrowLeft" />
-            <MudButton OnClick="NextStep" StartIcon="@Icons.Material.Filled.ArrowRight" />
+            <MudButton Disabled="DisablePrevStep" OnClick="PrevStep" StartIcon="@Icons.Material.Filled.ArrowLeft">Step</MudButton>
+            <MudButton OnClick="NextStep" StartIcon="@Icons.Material.Filled.ArrowRight">Step</MudButton>
         </div>
     }
     else
@@ -22,13 +25,36 @@
         </div>
     }
 
-    @* TODO display results nice *@
-    <div>
-        @(currentResult != null ? currentResult.Result : "No result")
-        @(currentResult != null ? currentResult.Exception?.ToString() : "No exception")
-    </div>
+    @if (currentResult is null)
+    {
+        <span>Waiting for run</span>
+    }
+    else if (executionActive)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else
+    {
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+            @if (currentResult.Exception is null)
+            {
+                <div>
+                    <MudChip T="string" Color="Color.Success">Success</MudChip> <span>Result: @currentResult.Result</span><MudIconButton OnClick="CopyResultToClipboard" Icon="@Icons.Material.Filled.CopyAll" />
+                </div>
+            }
+            else
+            {
+                <div>
+                    <MudChip T="string" Color="Color.Error">Exception</MudChip> <span>Exception: @currentResult.Exception.ToString()</span>
+                </div>
+            }
+
+            <span>Elapsed Time: @FormatElapsedTime()</span>
+        </div>
+    }
 </MudCard>
 
+@inject IJSRuntime JsRuntime
 @code {
     [Parameter]
     [EditorRequired]
@@ -38,10 +64,11 @@
     private ISingleExecutionPuzzle? singleExecutionPuzzle;
     private IVisualize2d? visualizer;
     private ExecutionResult? currentResult;
+    private bool executionActive;
+    private DrawableCoordinate[] currentVisual = [];
+    private int puzzlePartToExecute = 1;
 
-    private readonly DrawableCoordinate[] emptyCoordinates = [];
-
-    private DrawableCoordinate[] CurrentVisual => visualizer is not null ? visualizer.GetCoordinates() : emptyCoordinates;
+    private bool DisablePrevStep => currentResult is not StepExecutionResult stepResult || stepResult.CurrentState is null;
 
     protected override void OnInitialized()
     {
@@ -55,27 +82,67 @@
 
     private async Task ResetPuzzle()
     {
-        await stepExecutionPuzzle!.ResetToInitialState();
+        await Execution(stepExecutionPuzzle!.ResetToInitialState);
     }
 
     private async Task NextStep()
     {
-        currentResult = await stepExecutionPuzzle!.ExecuteStepPartOne();
+        await Execution(async () => currentResult = await stepExecutionPuzzle!.ExecuteStepPartOne());
     }
 
     private async Task PrevStep()
     {
-        // TODO need to null check some of this probably
-        await stepExecutionPuzzle!.RevertState(((StepExecutionResult)currentResult!).CurrentState!);
+        await Execution(async () => await stepExecutionPuzzle!.RevertState(((StepExecutionResult)currentResult!).CurrentState!));
     }
 
     private async Task ExecutePartOne()
     {
-        currentResult = await singleExecutionPuzzle!.ExecutePartOne();
+        await Execution(async () => currentResult = await singleExecutionPuzzle!.ExecutePartOne());
     }
 
     private async Task ExecutePartTwo()
     {
-        currentResult = await singleExecutionPuzzle!.ExecutePartTwo();
+        await Execution(async () => currentResult = await singleExecutionPuzzle!.ExecutePartTwo());
     }
+
+    private async Task Execution(Func<Task> executeMethod)
+    {
+        executionActive = true;
+        // Let ui update
+        await Task.Yield();
+        await executeMethod();
+        executionActive = false;
+        UpdateVisual();
+    }
+
+    private void UpdateVisual()
+    {
+        if (executionActive || visualizer is null)
+        {
+            return;
+        }
+
+        currentVisual = visualizer.GetCoordinates();
+    }
+
+    private async Task OnPartToExecuteChange(int newValue)
+    {
+        puzzlePartToExecute = newValue;
+        // Make sure we don't have a corrupt state that's partly part 1 and starts running part 2
+        // This might not always be necessary
+        // Some puzzles might actually rely on part 1 running first
+        await stepExecutionPuzzle!.ResetToInitialState();
+    }
+
+    private async Task CopyResultToClipboard()
+    {
+        await JsRuntime.InvokeVoidAsync("copyTextToClipboard", currentResult!.Result!);
+    }
+
+    private string FormatElapsedTime()
+    {
+        // Format the output
+        return $"{currentResult!.ElapsedTime.Minutes:D2}m {currentResult.ElapsedTime.Seconds:D2}s {currentResult.ElapsedTime.Milliseconds:D3}ms {currentResult.ElapsedTime.Microseconds:D9}us";
+    }
+
 }

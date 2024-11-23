@@ -4,6 +4,8 @@ window.AocCanvas = {
         const pixelSize = imageData.pixelSize;
         const width = imageData.width * pixelSize;
         const height = imageData.height * pixelSize;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
     
         const ctx = canvas.getContext("2d");
         ctx.canvas.width = width;

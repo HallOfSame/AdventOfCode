@@ -1,47 +1,53 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Helpers.Exceptions;
 using Helpers.Interfaces;
 
 namespace Helpers.Structure
 {
-    public abstract class SingleExecutionPuzzle<TExecutionState> : ExecutionPuzzle<ExecutionResult, TExecutionState>
-        where TExecutionState : IExecutionState
+    public abstract class SingleExecutionPuzzle<TExecutionState> : ExecutionPuzzle<ExecutionResult, TExecutionState>, ISingleExecutionPuzzle
     {}
 
-    public abstract class ExecutionPuzzle<TProcessingResult, TExecutionState> : IExecutablePuzzle<TProcessingResult> where TExecutionState : IExecutionState
+    public abstract class ExecutionPuzzle<TProcessingResult, TExecutionState> : IExecutablePuzzle<TProcessingResult> where TProcessingResult : ExecutionResult, new()
     {
         private TExecutionState? initialState;
 
-        protected TExecutionState InitialState
-        {
-            get
-            {
-                return initialState ?? throw new InvalidOperationException("Accessed initial state before load.");
-            }
-        }
+        protected TExecutionState InitialState => initialState ?? throw new InvalidOperationException("Accessed initial state before load.");
 
         public async Task<TProcessingResult> ExecutePartOne()
         {
-            try
-            {
-                return await ExecutePuzzlePartOne();
-            }
-            catch (Exception ex)
-            {
-                throw new UnhandledExecutionException(ex);
-            }
+            return await ExecuteAndCatch(ExecutePuzzlePartOne);
         }
 
         public async Task<TProcessingResult> ExecutePartTwo()
         {
+            return await ExecuteAndCatch(ExecutePuzzlePartTwo);
+        }
+
+        private static async Task<TProcessingResult> ExecuteAndCatch(Func<Task<string>> executeMethod)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
             try
             {
-                return await ExecutePuzzlePartTwo();
+                var result = await executeMethod();
+                sw.Stop();
+                return new TProcessingResult
+                {
+                    Result = result,
+                    ElapsedTime = sw.Elapsed
+                };
             }
             catch (Exception ex)
             {
-                throw new UnhandledExecutionException(ex);
+                sw.Stop();
+                return new TProcessingResult
+                {
+                    Exception = ex,
+                    ElapsedTime = sw.Elapsed
+                };
             }
         }
 
@@ -60,7 +66,7 @@ namespace Helpers.Structure
         public abstract PuzzleInfo Info { get; }
 
         protected abstract Task<TExecutionState> LoadInputState(string puzzleInput);
-        protected abstract Task<TProcessingResult> ExecutePuzzlePartOne();
-        protected abstract Task<TProcessingResult> ExecutePuzzlePartTwo();
+        protected abstract Task<string> ExecutePuzzlePartOne();
+        protected abstract Task<string> ExecutePuzzlePartTwo();
     }
 }

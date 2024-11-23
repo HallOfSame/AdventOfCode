@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace Helpers.Interfaces;
 
@@ -20,8 +19,9 @@ public class StepExecutionResult : ExecutionResult
 
     /// <summary>
     /// Current state after processing this step.
+    /// Should only be <c>null</c> if we had an exception. (Maybe it shouldn't even be null then?)
     /// </summary>
-    public IExecutionState? CurrentState { get; init; }
+    public object? CurrentState { get; init; }
 }
 
 /// <summary>
@@ -38,7 +38,7 @@ public interface ISingleStepExecutable
     /// <summary>
     /// Used to revert the internal state to <paramref name="state"/>.
     /// </summary>
-    Task RevertState(IExecutionState state);
+    Task RevertState(object state);
 
     /// <summary>
     /// Run a single step for part 1 and pause.

@@ -9,7 +9,7 @@
             <MudText Typo="Typo.h5">@puzzle.Info.Name</MudText>
             <MudText Typo="Typo.body2">@puzzle.Info.Year Day @puzzle.Info.Day</MudText>
             <MudLink Typo="Typo.body2" Target="_blank" Href="@($"https://adventofcode.com/{puzzle.Info.Year}/day/{puzzle.Info.Day}")">AoC Link</MudLink>
-            <MudSelect @bind-Value="puzzleInput">
+            <MudSelect @bind-Value="puzzleInput" HelperText="Select Input">
                 @foreach (var input in availableInputs)
                 {
                     <MudSelectItem @key="input.InputId" Value="input">

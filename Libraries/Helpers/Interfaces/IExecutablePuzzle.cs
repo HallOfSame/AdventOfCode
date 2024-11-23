@@ -11,6 +11,8 @@ public class ExecutionResult
 {
     public string? Result { get; init; }
     public Exception? Exception { get; init; }
+
+    public TimeSpan ElapsedTime { get; init; }
 }
 
 /// <summary>
