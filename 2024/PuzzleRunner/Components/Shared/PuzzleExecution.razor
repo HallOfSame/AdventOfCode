@@ -92,6 +92,7 @@
 
     private async Task PrevStep()
     {
+        // TODO this is just re-using the existing state we need the step from before
         await Execution(async () => await stepExecutionPuzzle!.RevertState(((StepExecutionResult)currentResult!).CurrentState!));
     }
 
