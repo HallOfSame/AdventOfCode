@@ -1,57 +1,65 @@
 ﻿@using Helpers.Drawing
 @using Helpers.Interfaces
 <MudCard>
-    @if (visualizer is not null)
-    {
-        <BlazorCanvas CoordinatesToDraw="currentVisual" />
-    }
-    @if (stepExecutionPuzzle is not null)
-    {
-        <div style="display: flex; gap: 16px;">
-            <MudSelect T="int" HelperText="Puzzle Part" Value="puzzlePartToExecute" ValueChanged="newVal => OnPartToExecuteChange(newVal)">
-                <MudSelectItem Value="1">One</MudSelectItem>
-                <MudSelectItem Value="2">Two</MudSelectItem>
-            </MudSelect>
-            <MudButton OnClick="ResetPuzzle">Reset</MudButton>
-            <MudButton Disabled="DisablePrevStep" OnClick="PrevStep" StartIcon="@Icons.Material.Filled.ArrowLeft">Step</MudButton>
-            <MudButton OnClick="NextStep" StartIcon="@Icons.Material.Filled.ArrowRight">Step</MudButton>
-        </div>
-    }
-    else
-    {
-        <div style="display: flex; gap: 16px;">
-            <MudButton OnClick="ExecutePartOne">Part One</MudButton>
-            <MudButton OnClick="ExecutePartTwo">Part Two</MudButton>
-        </div>
-    }
-
-    @if (currentResult is null)
-    {
-        <span>Waiting for run</span>
-    }
-    else if (executionActive)
-    {
-        <MudProgressCircular Indeterminate="true" />
-    }
-    else
-    {
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-            @if (currentResult.Exception is null)
+    <MudExpansionPanels MultiExpansion="true">
+        <MudExpansionPanel Text="Actions" Expanded="true">
+            @if (stepExecutionPuzzle is not null)
             {
-                <div>
-                    <MudChip T="string" Color="Color.Success">Success</MudChip> <span>Result: @currentResult.Result</span><MudIconButton OnClick="CopyResultToClipboard" Icon="@Icons.Material.Filled.CopyAll" />
+                <div style="display: flex; gap: 16px;">
+                    <MudSelect T="int" HelperText="Puzzle Part" Value="puzzlePartToExecute" ValueChanged="newVal => OnPartToExecuteChange(newVal)">
+                        <MudSelectItem Value="1">One</MudSelectItem>
+                        <MudSelectItem Value="2">Two</MudSelectItem>
+                    </MudSelect>
+                    <MudButton OnClick="ResetPuzzle">Reset</MudButton>
+                    <MudButton Disabled="DisablePrevStep" OnClick="PrevStep" StartIcon="@Icons.Material.Filled.ArrowLeft">Step</MudButton>
+                    <MudButton OnClick="NextStep" StartIcon="@Icons.Material.Filled.ArrowRight">Step</MudButton>
                 </div>
             }
             else
             {
-                <div>
-                    <MudChip T="string" Color="Color.Error">Exception</MudChip> <span>Exception: @currentResult.Exception.ToString()</span>
+                <div style="display: flex; gap: 16px;">
+                    <MudButton OnClick="ExecutePartOne">Part One</MudButton>
+                    <MudButton OnClick="ExecutePartTwo">Part Two</MudButton>
                 </div>
             }
+        </MudExpansionPanel>
+        <MudExpansionPanel Text="Results" Expanded="true">
+            @if (currentResult is null)
+            {
+                <span>Waiting for run</span>
+            }
+            else if (executionActive)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else
+            {
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    @if (currentResult.Exception is null)
+                    {
+                        <div style="display: flex; align-items: center">
+                            <MudChip T="string" Color="Color.Success">Success</MudChip> <span>Result: @currentResult.Result</span><MudIconButton OnClick="CopyResultToClipboard" Icon="@Icons.Material.Filled.CopyAll" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="display: flex; align-items: center">
+                            <MudChip T="string" Color="Color.Error">Exception</MudChip> <span>Exception: @currentResult.Exception.ToString()</span>
+                        </div>
+                    }
 
-            <span>Elapsed Time: @FormatElapsedTime()</span>
-        </div>
-    }
+                    <span>Elapsed Time: @FormatElapsedTime()</span>
+                </div>
+            }
+        </MudExpansionPanel>
+        
+        @if (visualizer is not null)
+        {
+            <MudExpansionPanel Text="Visualization" Expanded="true">
+                <BlazorCanvas CoordinatesToDraw="currentVisual"/>
+            </MudExpansionPanel>
+        }
+    </MudExpansionPanels>
 </MudCard>
 
 @inject IJSRuntime JsRuntime
