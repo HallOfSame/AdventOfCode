@@ -1,19 +1,19 @@
 ﻿@using Helpers.Drawing
 @using Helpers.Interfaces
-<MudCard>
+<div>
     <MudExpansionPanels MultiExpansion="true">
         <MudExpansionPanel Text="Actions" Expanded="true">
             @if (stepExecutionPuzzle is not null)
             {
-                <div style="display: flex; gap: 16px;">
-                    <MudSelect T="int" HelperText="Puzzle Part" Value="puzzlePartToExecute" ValueChanged="newVal => OnPartToExecuteChange(newVal)">
+                <MudToolBar>
+                    <MudSelect Dense Variant="Variant.Outlined" Label="Part to execute" T="int" Value="puzzlePartToExecute" ValueChanged="newVal => OnPartToExecuteChange(newVal)">
                         <MudSelectItem Value="1">One</MudSelectItem>
                         <MudSelectItem Value="2">Two</MudSelectItem>
                     </MudSelect>
-                    <MudButton OnClick="ResetPuzzle">Reset</MudButton>
-                    <MudButton Disabled="DisablePrevStep" OnClick="PrevStep" StartIcon="@Icons.Material.Filled.ArrowLeft">Step</MudButton>
-                    <MudButton OnClick="NextStep" StartIcon="@Icons.Material.Filled.ArrowRight">Step</MudButton>
-                </div>
+                    <MudButton OnClick="ResetPuzzle" Color="Color.Error" StartIcon="@Icons.Material.Filled.RestartAlt">Reset</MudButton>
+                    <MudButton Disabled="DisablePrevStep" OnClick="PrevStep" StartIcon="@Icons.Material.Filled.ArrowBack">Prev</MudButton>
+                    <MudButton OnClick="NextStep" EndIcon="@Icons.Material.Filled.ArrowForward">Next</MudButton>
+                </MudToolBar>
             }
             else
             {
@@ -52,7 +52,7 @@
                 </div>
             }
         </MudExpansionPanel>
-        
+
         @if (visualizer is not null)
         {
             <MudExpansionPanel Text="Visualization" Expanded="true">
@@ -60,7 +60,7 @@
             </MudExpansionPanel>
         }
     </MudExpansionPanels>
-</MudCard>
+</div>
 
 @inject IJSRuntime JsRuntime
 @code {
@@ -75,8 +75,9 @@
     private bool executionActive;
     private DrawableCoordinate[] currentVisual = [];
     private int puzzlePartToExecute = 1;
+    private object? prevState;
 
-    private bool DisablePrevStep => currentResult is not StepExecutionResult stepResult || stepResult.CurrentState is null;
+    private bool DisablePrevStep => prevState is null;
 
     protected override void OnInitialized()
     {
@@ -95,13 +96,21 @@
 
     private async Task NextStep()
     {
-        await Execution(async () => currentResult = await stepExecutionPuzzle!.ExecuteStepPartOne());
+        if (puzzlePartToExecute == 1)
+        {
+            await Execution(async () => currentResult = await stepExecutionPuzzle!.ExecuteStepPartOne());
+        }
+        else
+        {
+            await Execution(async () => currentResult = await stepExecutionPuzzle!.ExecuteStepPartTwo());
+        }
+
+        prevState = ((StepExecutionResult)currentResult!).CurrentState;
     }
 
     private async Task PrevStep()
     {
-        // TODO this is just re-using the existing state we need the step from before
-        await Execution(async () => await stepExecutionPuzzle!.RevertState(((StepExecutionResult)currentResult!).CurrentState!));
+        await Execution(async () => await stepExecutionPuzzle!.RevertState(prevState!));
     }
 
     private async Task ExecutePartOne()

@@ -6,6 +6,36 @@ using Helpers.Structure;
 
 namespace PuzzleDays
 {
+    public class TestPuzzleSteps : StepExecutionPuzzle<TestPuzzleSteps.ExecutionState>, IVisualize2d
+    {
+        public class ExecutionState
+        {
+            // TODO
+        }
+
+        public override PuzzleInfo Info { get; } = new(2023, 17, "The Floor Will Be Lava (stepped)");
+        protected override async Task<ExecutionState> LoadInputState(string puzzleInput)
+        {
+            // TODO
+            return new ExecutionState();
+        }
+
+        protected override async Task<(bool isComplete, string? result)> ExecutePuzzleStepPartOne()
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override async Task<(bool isComplete, string? result)> ExecutePuzzleStepPartTwo()
+        {
+            throw new NotImplementedException();
+        }
+
+        public DrawableCoordinate[] GetCoordinates()
+        {
+            return [];
+        }
+    }
+
     /// <summary>
     /// The old code mostly copied and not step based
     /// </summary>
