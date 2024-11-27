@@ -75,8 +75,9 @@
     private bool executionActive;
     private DrawableCoordinate[] currentVisual = [];
     private int puzzlePartToExecute = 1;
-    private object? prevState;
 
+    // TODO keep a list of state and display / index with the step number
+    // Maybe keep the step num on the result?
     private bool DisablePrevStep => prevState is null;
 
     protected override void OnInitialized()

@@ -10,19 +10,47 @@ namespace PuzzleDays
     {
         public class ExecutionState
         {
-            // TODO
+            public bool Started { get; set; }
+            public required List<Beam> CurrentBeams { get; set; }
+            public required HashSet<Coordinate> EnergizedCoordinates { get; set; }
+            public required HashSet<CoordinateWithDir> AlreadyProcessed { get; set; }
         }
+
+        public record CoordinateWithDir(Coordinate Coordinate, Direction Direction);
 
         public override PuzzleInfo Info { get; } = new(2023, 17, "The Floor Will Be Lava (stepped)");
-        protected override async Task<ExecutionState> LoadInputState(string puzzleInput)
+
+        private Dictionary<Coordinate, char> coordinateMap = [];
+
+        protected override async Task<ExecutionState> LoadInitialState(string puzzleInput)
         {
-            // TODO
-            return new ExecutionState();
+            coordinateMap = (await new GridFileReader().ReadFromString(puzzleInput)).ToDictionary(x => x.Coordinate, x => x.Value);
+
+            return new ExecutionState
+            {
+                CurrentBeams = [],
+                AlreadyProcessed = [],
+                EnergizedCoordinates = [],
+                Started = false
+            };
         }
 
-        protected override async Task<(bool isComplete, string? result)> ExecutePuzzleStepPartOne()
+        protected override Task<(bool isComplete, string? result)> ExecutePuzzleStepPartOne()
         {
-            throw new NotImplementedException();
+            if (!CurrentState.Started)
+            {
+                var maxY = coordinateMap.Keys.Max(x => x.Y);
+
+                CurrentState.CurrentBeams =
+                [
+                    new Beam(new Coordinate(-1, maxY), Direction.East)
+                ];
+            }
+
+            CurrentState = RunEnergizeStep(CurrentState);
+
+            return Task.FromResult((CurrentState.CurrentBeams.Count == 0, CurrentState.EnergizedCoordinates.Count
+                                       .ToString()))!;
         }
 
         protected override async Task<(bool isComplete, string? result)> ExecutePuzzleStepPartTwo()
@@ -32,7 +60,226 @@ namespace PuzzleDays
 
         public DrawableCoordinate[] GetCoordinates()
         {
-            return [];
+            var processedMap = CurrentState.AlreadyProcessed.GroupBy(x => x.Coordinate).ToDictionary(x => x.Key, x => x.First().Direction);
+            var toDraw = new List<DrawableCoordinate>(coordinateMap.Count);
+            foreach (var coordinate in coordinateMap)
+            {
+                var newCoordinate = new DrawableCoordinate
+                {
+                    X = coordinate.Key.X,
+                    Y = coordinate.Key.Y
+                };
+
+                if (coordinate.Value != '-' && coordinate.Value != '|' && processedMap.TryGetValue(coordinate.Key, out var direction))
+                {
+                    newCoordinate.Text = direction switch
+                    {
+                        Direction.North => "^",
+                        Direction.East => ">",
+                        Direction.South => "v",
+                        Direction.West => "<",
+                        _ => throw new ArgumentException("Unexpected direction")
+                    };
+                }
+                else
+                {
+                    newCoordinate.Text = coordinate.Value.ToString();
+                }
+
+                toDraw.Add(newCoordinate);
+            }
+            
+            return toDraw.ToArray();
+        }
+
+        private ExecutionState RunEnergizeStep(ExecutionState currentState)
+        {
+            var beamsAfterMoving = new List<Beam>();
+
+            foreach (var beam in currentState.CurrentBeams)
+            {
+                if (beam.CurrentLocation is null)
+                {
+                    // Updated overall coordinates
+                    currentState.EnergizedCoordinates.UnionWith(beam.VisitedCoordinates);
+                    continue;
+                }
+
+                if (!currentState.AlreadyProcessed.Add(new CoordinateWithDir(beam.CurrentLocation, beam.CurrentDirection)))
+                {
+                    // Another beam has been here with the same direction, so stop processing it
+                    currentState.EnergizedCoordinates.UnionWith(beam.VisitedCoordinates);
+                    continue;
+                }
+
+                var updatedBeam = ProcessMove(beam);
+
+                beamsAfterMoving.AddRange(updatedBeam);
+            }
+
+            return new ExecutionState
+            {
+                CurrentBeams = beamsAfterMoving,
+                AlreadyProcessed = currentState.AlreadyProcessed,
+                EnergizedCoordinates = currentState.EnergizedCoordinates,
+                Started = true
+            };
+        }
+
+        private List<Beam> ProcessMove(Beam beam)
+        {
+            var returnBeams = new List<Beam>(2)
+            {
+                beam
+            };
+
+            var nextCoordinate = beam.CurrentLocation!.GetDirection(beam.CurrentDirection);
+
+            if (!coordinateMap.TryGetValue(nextCoordinate, out var ch))
+            {
+                // If it is off the grid, return null
+                beam.CurrentLocation = null;
+                return returnBeams;
+            }
+
+            var beamDirection = beam.CurrentDirection;
+            beam.CurrentLocation = nextCoordinate;
+
+            if (ch == '.')
+            {
+                // Empty space
+                return returnBeams;
+            }
+
+            // Handle pointy side of splitter
+            if (beamDirection is Direction.East or Direction.West && ch == '-')
+            {
+                // Essentially empty space
+                return returnBeams;
+            }
+
+            if (beamDirection is Direction.South or Direction.North && ch == '|')
+            {
+                // Essentially empty space
+                return returnBeams;
+            }
+
+            // Handle flat side of splitters
+            if (beamDirection is Direction.East or Direction.West && ch == '|')
+            {
+                var locOne = nextCoordinate.GetDirection(Direction.North);
+                
+                var locTwo = nextCoordinate.GetDirection(Direction.South);
+
+                // If only one of the two exists, try and keep the existing beam
+                if (!coordinateMap.ContainsKey(locOne))
+                {
+                    beam.CurrentDirection = Direction.South;
+                }
+                else
+                {
+                    beam.CurrentDirection = Direction.North;
+
+                    if (coordinateMap.ContainsKey(locTwo))
+                    {
+                        var newBeam = new Beam(nextCoordinate, Direction.South);
+                        returnBeams.Add(newBeam);
+                    }
+                }
+                
+                return returnBeams;
+            }
+
+            if (beamDirection is Direction.North or Direction.South && ch == '-')
+            {
+                var locOne = nextCoordinate.GetDirection(Direction.East);
+                
+                var locTwo = nextCoordinate.GetDirection(Direction.West);
+
+                // If only one of the two exists, try and keep the existing beam
+                if (!coordinateMap.ContainsKey(locOne))
+                {
+                    beam.CurrentDirection = Direction.West;
+                }
+                else
+                {
+                    beam.CurrentDirection = Direction.East;
+
+                    if (coordinateMap.ContainsKey(locTwo))
+                    {
+                        var newBeam = new Beam(nextCoordinate, Direction.West);
+                        returnBeams.Add(newBeam);
+                    }
+                }
+                
+                return returnBeams;
+            }
+
+            // Handle mirrors
+            if (ch == '/')
+            {
+                var newDirection = beamDirection switch
+                {
+                    Direction.South => Direction.West,
+                    Direction.North => Direction.East,
+                    Direction.East => Direction.North,
+                    Direction.West => Direction.South,
+                    _ => throw new NotImplementedException(),
+                };
+
+                beam.CurrentDirection = newDirection;
+                return returnBeams;
+            }
+
+            if (ch == '\\')
+            {
+                var newDirection = beamDirection switch
+                {
+                    Direction.South => Direction.East,
+                    Direction.North => Direction.West,
+                    Direction.East => Direction.South,
+                    Direction.West => Direction.North,
+                    _ => throw new NotImplementedException(),
+                };
+
+                beam.CurrentDirection = newDirection;
+                return returnBeams;
+            }
+
+            throw new Exception($"Unexpected character {ch}");
+        }
+
+        public class Beam
+        {
+            public Beam(Coordinate currentLocation, Direction currentDirection)
+            {
+                CurrentLocation = currentLocation;
+                CurrentDirection = currentDirection;
+                VisitedCoordinates =
+                [
+                    currentLocation
+                ];
+            }
+
+            private Coordinate? currLoc;
+
+            public Coordinate? CurrentLocation
+            {
+                get => currLoc;
+                set
+                {
+                    if (value is not null)
+                    {
+                        VisitedCoordinates.Add(value);
+                    }
+
+                    currLoc = value;
+                }
+            }
+
+            public Direction CurrentDirection { get; set; }
+
+            public HashSet<Coordinate> VisitedCoordinates { get; } = [];
         }
     }
 

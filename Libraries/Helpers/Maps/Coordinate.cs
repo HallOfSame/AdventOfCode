@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Helpers.Maps
 {
@@ -92,5 +94,32 @@ namespace Helpers.Maps
         }
 
         #endregion
+    }
+
+    public class CoordinateConverter : JsonConverter<Coordinate>
+    {
+        public override Coordinate? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType != JsonTokenType.String)
+            {
+                throw new JsonException("Expected a string.");
+            }
+
+            var parts = reader.GetString()!.Split(',');
+            if (parts.Length != 2 || 
+                !decimal.TryParse(parts[0], out var x) || 
+                !decimal.TryParse(parts[1], out var y))
+            {
+                throw new JsonException("Invalid format for Coordinate.");
+            }
+
+            return new Coordinate { X = x, Y = y };
+        }
+
+        public override void Write(Utf8JsonWriter writer, Coordinate value, JsonSerializerOptions options)
+        {
+            var serializedValue = $"{value.X},{value.Y}";
+            writer.WriteStringValue(serializedValue);
+        }
     }
 }

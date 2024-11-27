@@ -9,7 +9,13 @@ namespace Helpers.Structure
     {
         private readonly JsonStateCopier stateCopier = new();
 
-        protected TExecutionState? CurrentState;
+        private TExecutionState? currentState;
+
+        protected TExecutionState CurrentState
+        {
+            get => currentState ?? throw new InvalidOperationException("Accessed current state before load");
+            set => currentState = value;
+        }
 
         public Task ResetToInitialState()
         {
@@ -97,6 +103,14 @@ namespace Helpers.Structure
             return result.Result!;
         }
 
+        protected sealed override async Task<TExecutionState> LoadInputState(string puzzleInput)
+        {
+            var state = await LoadInitialState(puzzleInput);
+            CurrentState = state;
+            return state;
+        }
+
+        protected abstract Task<TExecutionState> LoadInitialState(string puzzleInput);
         protected abstract Task<(bool isComplete, string? result)> ExecutePuzzleStepPartOne();
         protected abstract Task<(bool isComplete, string? result)> ExecutePuzzleStepPartTwo();
     }
