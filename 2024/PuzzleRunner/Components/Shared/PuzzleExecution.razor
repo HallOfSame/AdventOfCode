@@ -12,7 +12,9 @@
                     </MudSelect>
                     <MudButton OnClick="ResetPuzzle" Color="Color.Error" StartIcon="@Icons.Material.Filled.RestartAlt">Reset</MudButton>
                     <MudButton Disabled="DisablePrevStep" OnClick="PrevStep" StartIcon="@Icons.Material.Filled.ArrowBack">Prev</MudButton>
-                    <MudButton OnClick="NextStep" EndIcon="@Icons.Material.Filled.ArrowForward">Next</MudButton>
+                    <span>Step: @currentStep</span>
+                    <MudButton Disabled="DisableNextStep" OnClick="NextStep" EndIcon="@Icons.Material.Filled.ArrowForward">Next</MudButton>
+                    <MudButton OnClick="ExecuteAllSteps" EndIcon="@Icons.Material.Filled.FastForward">Run</MudButton>
                 </MudToolBar>
             }
             else
@@ -75,10 +77,12 @@
     private bool executionActive;
     private DrawableCoordinate[] currentVisual = [];
     private int puzzlePartToExecute = 1;
+    private List<object> stateBeforeStep = [null!];
+    private int currentStep;
 
-    // TODO keep a list of state and display / index with the step number
-    // Maybe keep the step num on the result?
-    private bool DisablePrevStep => prevState is null;
+    private bool resetRequired;
+    private bool DisablePrevStep => resetRequired || currentStep == 0;
+    private bool DisableNextStep => resetRequired || currentResult is StepExecutionResult { IsCompleted: true };
 
     protected override void OnInitialized()
     {
@@ -93,6 +97,9 @@
     private async Task ResetPuzzle()
     {
         await Execution(stepExecutionPuzzle!.ResetToInitialState);
+        resetRequired = false;
+        currentStep = 0;
+        currentResult = null;
     }
 
     private async Task NextStep()
@@ -106,12 +113,38 @@
             await Execution(async () => currentResult = await stepExecutionPuzzle!.ExecuteStepPartTwo());
         }
 
-        prevState = ((StepExecutionResult)currentResult!).CurrentState;
+        currentStep++;
+        stateBeforeStep.Insert(currentStep, ((StepExecutionResult)currentResult!).CurrentState!);
     }
 
     private async Task PrevStep()
     {
-        await Execution(async () => await stepExecutionPuzzle!.RevertState(prevState!));
+        if (currentStep == 1)
+        {
+            await ResetPuzzle();
+        }
+        else
+        {
+            await Execution(async () => await stepExecutionPuzzle!.RevertState(stateBeforeStep[currentStep]));
+        }
+
+        currentStep--;
+    }
+
+    private async Task ExecuteAllSteps()
+    {
+        // Too much re-writing to track how many steps we run from here
+        // so just require the reset button before letting those buttons work
+        resetRequired = true;
+
+        if (puzzlePartToExecute == 1)
+        {
+            await Execution(async () => currentResult = await stepExecutionPuzzle!.ExecutePartOne());
+        }
+        else
+        {
+            await Execution(async () => currentResult = await stepExecutionPuzzle!.ExecutePartTwo());
+        }
     }
 
     private async Task ExecutePartOne()

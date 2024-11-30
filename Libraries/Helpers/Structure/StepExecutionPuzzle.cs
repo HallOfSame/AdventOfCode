@@ -106,7 +106,7 @@ namespace Helpers.Structure
         protected sealed override async Task<TExecutionState> LoadInputState(string puzzleInput)
         {
             var state = await LoadInitialState(puzzleInput);
-            CurrentState = state;
+            CurrentState = stateCopier.Copy(state);
             return state;
         }
 

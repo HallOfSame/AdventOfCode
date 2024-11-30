@@ -12,7 +12,9 @@ window.AocCanvas = {
         ctx.canvas.height = height;
         ctx.fillStyle = "black";
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        console.log(ctx.font);
         ctx.font = `${pixelSize}px square`;
+        console.log(ctx.font);
 
         function drawText(x, y, text, color) {
             const colorToUse = color || "white";
@@ -54,12 +56,7 @@ window.AocCanvas = {
             const x = event.clientX - rect.left;          // Mouse X position
             const y = event.clientY - rect.top;           // Mouse Y position
 
-            //const translatedX = Math.floor(x / pixelSize);
-            //const translatedY = Math.floor(y / pixelSize);
-
             dotnetHelper.invokeMethodAsync("OnCanvasMouseMove", x, y);
-            // Display the coordinates
-            // coordsDisplay.textContent = `Mouse Coordinates: (${translatedX.toFixed(2)}, ${translatedY.toFixed(2)})`;
         });
     }
 }

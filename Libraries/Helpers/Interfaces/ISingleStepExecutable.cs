@@ -22,6 +22,11 @@ public class StepExecutionResult : ExecutionResult
     /// Should only be <c>null</c> if we had an exception. (Maybe it shouldn't even be null then?)
     /// </summary>
     public object? CurrentState { get; init; }
+
+    /// <summary>
+    /// Which step we are on. Starts at 0.
+    /// </summary>
+    public int StepNumber { get; set; }
 }
 
 /// <summary>
