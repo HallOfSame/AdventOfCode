@@ -23,7 +23,8 @@ namespace PuzzleDays
 
         protected override async Task<string> ExecutePuzzlePartTwo()
         {
-            throw new NotImplementedException();
+            return InitialState.Reports.Count(IsSafeReportWithDampener)
+                               .ToString();
         }
 
         protected override async Task<ExecState> LoadInputState(string puzzleInput)
@@ -38,7 +39,7 @@ namespace PuzzleDays
             return new ExecState(allReports);
         }
 
-        private static bool IsSafeReport(List<int> report)
+        private static bool IsSafeReport(IList<int> report)
         {
             const int MaxChange = 3;
             const int MinChange = 1;
@@ -58,6 +59,32 @@ namespace PuzzleDays
             }
 
             return true;
+        }
+
+        private static bool IsSafeReportWithDampener(List<int> report)
+        {
+            var size = report.Count;
+
+            if (IsSafeReport(report))
+            {
+                // It just is valid
+                return true;
+            }
+
+            // Check variations skipping one index
+            for(var skipIndex = 0; skipIndex < size; skipIndex++)
+            {
+                var updatedReport = new int[report.Count - 1];
+                report.CopyTo(0, updatedReport, 0, skipIndex);
+                report.CopyTo(skipIndex + 1, updatedReport, skipIndex, size - 1 - skipIndex);
+
+                if (IsSafeReport(updatedReport))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         #endregion
