@@ -21,6 +21,7 @@
         <MudCardActions>
             <MudButton OnClick="LoadSelectedInput" Disabled="puzzleInput == null" Variant="Variant.Text" Color="Color.Primary">Initialize</MudButton>
             <MudButton OnClick="OpenInputUploader" Variant="Variant.Text" Color="Color.Primary">Create Input</MudButton>
+            <MudButton OnClick="LoadInputFromSite" Variant="Variant.Text" Color="Color.Primary">Load from AoC</MudButton>
         </MudCardActions>
     </MudCard>
     <br />
@@ -33,6 +34,8 @@
 @inject IPuzzleContainer PuzzleContainer
 @inject IDialogService DialogService
 @inject AdventOfCodeContext AdventOfCodeContext
+@inject IAoCHttpClient HttpClient
+@inject AdventOfCodeContext DbContext
 @code {
 
     [Parameter]
@@ -84,5 +87,30 @@
     {
         readyToExecute = false;
         puzzleInput = newValue;
+    }
+
+    private async Task LoadInputFromSite()
+    {
+        if (availableInputs.Any(x => x.InputType == PuzzleInputType.Personal))
+        {
+            return;
+        }
+        
+        var inputData = await HttpClient.GetInput(puzzle.Info.Year, puzzle.Info.Day);
+
+        var newInput = new PuzzleInput
+            {
+                Name = "Real Input",
+                Day = puzzle.Info.Day,
+                Year = puzzle.Info.Year,
+                Input = inputData,
+                InputType = PuzzleInputType.Personal
+            };
+
+        await DbContext.PuzzleInputs.AddAsync(newInput);
+        await DbContext.SaveChangesAsync();
+
+        availableInputs.Add(newInput);
+        OnInputChanged(newInput);
     }
 }
