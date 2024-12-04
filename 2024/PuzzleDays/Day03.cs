@@ -21,7 +21,7 @@ namespace PuzzleDays
 
             do
             {
-                if (TryParseMulExpression(ref currentCharIndex, out var newExpression))
+                if (TryParseMulExpression(ref currentCharIndex, out var newExpression, out _))
                 {
                     validMulInstructions.Add(newExpression);
                 }
@@ -34,12 +34,79 @@ namespace PuzzleDays
 
         protected override async Task<string> ExecutePuzzlePartTwo()
         {
-            throw new NotImplementedException();
+            var validMulInstructions = new List<(string expr, int startIdx)>();
+            var currentCharIndex = 0;
+
+            // Get all the expressions
+            do
+            {
+                if (TryParseMulExpression(ref currentCharIndex, out var newExpression, out var startIndex))
+                {
+                    validMulInstructions.Add((newExpression, startIndex));
+                }
+            } while (currentCharIndex < InitialState.MemoryValue.Length);
+
+            var doIndexes = new List<int>
+            {
+                // Start with 0 because they are enabled until we reach a don't
+                0
+            };
+            var dontIndexes = new List<int>();
+
+            // Find the index of any do() and don't() command
+            for (currentCharIndex = 0; currentCharIndex < InitialState.MemoryValue.Length; currentCharIndex++)
+            {
+                if (currentCharIndex + 4 >= InitialState.MemoryValue.Length)
+                {
+                    break;
+                }
+
+                if (InitialState.MemoryValue.Substring(currentCharIndex, 4) == "do()")
+                {
+                    doIndexes.Add(currentCharIndex);
+                    continue;
+                }
+
+                if (currentCharIndex + 7 >= InitialState.MemoryValue.Length)
+                {
+                    continue;
+                }
+
+                if (InitialState.MemoryValue.Substring(currentCharIndex, 7) == "don't()")
+                {
+                    dontIndexes.Add(currentCharIndex);
+                }
+            }
+
+            // Then use that to build a list of valid ranges
+            var validRanges = new List<(int start, int end)>();
+
+            foreach (var doIdx in doIndexes)
+            {
+                var followingDont = dontIndexes.FirstOrDefault(x => x > doIdx);
+
+                if (followingDont == 0)
+                {
+                    followingDont = int.MaxValue;
+                }
+
+                validRanges.Add((doIdx, followingDont));
+            }
+
+            // Filter down the valid instructions to the enabled ones
+            var enabledMulInstructions =
+                validMulInstructions.Where(x => validRanges.Any(range => range.start <= x.startIdx &&
+                                                                         range.end >= x.startIdx));
+
+            return enabledMulInstructions.Select(x => CalculateMulExpression(x.expr))
+                .Sum()
+                .ToString();
         }
 
-        private bool TryParseMulExpression(ref int currentIndex, out string mulExpression)
+        private bool TryParseMulExpression(ref int currentIndex, out string mulExpression, out int startIndex)
         {
             mulExpression = string.Empty;
+            startIndex = currentIndex;
 
             if (currentIndex + 4 >= InitialState.MemoryValue.Length || InitialState.MemoryValue.Substring(currentIndex, 4) != "mul(")
             {
