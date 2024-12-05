@@ -49,6 +49,12 @@ public class GridFileReader
         // Reverse to make the origin the bottom left
         strings.Reverse();
 
+        // Remove a trailing empty line if it exists
+        if (strings[0] == string.Empty)
+        {
+            strings.RemoveAt(0);
+        }
+
         var strLength = strings[0]
             .Length;
 

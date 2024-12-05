@@ -21,30 +21,46 @@ namespace Helpers.Extensions
                                                ? 8
                                                : 4];
 
-            neighbors[(int)Direction.West] = new Coordinate(startX - 1,
-                                                             startY);
-            neighbors[(int)Direction.East] = new Coordinate(startX + 1,
-                                                            startY);
-            neighbors[(int)Direction.South] = new Coordinate(startX,
-                                                             startY - 1);
-            neighbors[(int)Direction.North] = new Coordinate(startX,
-                                                             startY + 1);
+            AddDirectionToList(Direction.West);
+            AddDirectionToList(Direction.East);
+            AddDirectionToList(Direction.South);
+            AddDirectionToList(Direction.North);
 
             if (!includeDiagonals)
             {
                 return neighbors.ToList();
             }
 
-            neighbors[(int)Direction.SouthWest] = new Coordinate(startX - 1,
-                                                                 startY - 1);
-            neighbors[(int)Direction.NorthWest] = new Coordinate(startX - 1,
-                                                                 startY + 1);
-            neighbors[(int)Direction.SouthEast] = new Coordinate(startX + 1,
-                                                                 startY - 1);
-            neighbors[(int)Direction.NorthEast] = new Coordinate(startX + 1,
-                                                                 startY + 1);
+            AddDirectionToList(Direction.SouthWest);
+            AddDirectionToList(Direction.NorthWest);
+            AddDirectionToList(Direction.SouthEast);
+            AddDirectionToList(Direction.NorthEast);
 
             return neighbors.ToList();
+
+            void AddDirectionToList(Direction direction)
+            {
+                neighbors[(int)direction] = Move(start, direction);
+            }
+        }
+
+        public static Coordinate Move(this Coordinate startCoordinate, Direction direction)
+        {
+            var startX = startCoordinate.X;
+            var startY = startCoordinate.Y;
+
+            return direction switch
+            {
+                Direction.West => new Coordinate(startX - 1, startY),
+                Direction.East => new Coordinate(startX + 1, startY),
+                Direction.South => new Coordinate(startX, startY - 1),
+                Direction.North => new Coordinate(startX, startY + 1),
+                Direction.SouthWest => new Coordinate(startX - 1, startY - 1),
+                Direction.NorthWest => new Coordinate(startX - 1, startY + 1),
+                Direction.SouthEast => new Coordinate(startX + 1, startY - 1),
+                Direction.NorthEast => new Coordinate(startX + 1, startY + 1),
+                _ => throw new ArgumentException("Direction was not valid", nameof(direction))
+            };
         }
 
         public static void Draw(this IEnumerable<Coordinate> coordinates,

@@ -34,7 +34,13 @@ public class PuzzleInputTypeConfiguration : IEntityTypeConfiguration<PuzzleInput
         builder.Property(x => x.InputType)
             .HasConversion<int>();
 
-        builder.HasIndex(x => x.Name)
+        builder.HasIndex(x => new
+            {
+                x.Name,
+                x.Year,
+                x.Day,
+                x.InputType
+            })
             .IsUnique();
     }
 }
