@@ -5,7 +5,7 @@ namespace Helpers.Interfaces;
 /// <summary>
 /// Represents a puzzle that executes the solver in a step-by-step process that can be run one step at a time.
 /// </summary>
-public interface IStepExecutionPuzzle : IExecutablePuzzle<StepExecutionResult>, ISingleStepExecutable {}
+public interface IStepExecutionPuzzle : IExecutablePuzzle<StepExecutionResult>, ISingleStepExecutable;
 
 /// <summary>
 /// To represent the return from doing one step of work.
@@ -54,4 +54,11 @@ public interface ISingleStepExecutable
     /// Run a single step for part 2 and pause.
     /// </summary>
     Task<StepExecutionResult> ExecuteStepPartTwo();
+
+    /// <summary>
+    /// If <c>true</c> we reset the state when switching between part one and two.
+    /// If <c>false</c> it is left alone (useful for puzzles that need part 1 to run first).
+    /// Just need to be careful about partial execution of part 1 before part 2
+    /// </summary>
+    bool ResetOnNewPart { get; }
 }

@@ -7,7 +7,7 @@ namespace Helpers.Structure
 {
     public abstract class StepExecutionPuzzle<TExecutionState> : ExecutionPuzzle<StepExecutionResult, TExecutionState>, IStepExecutionPuzzle
     {
-        private readonly JsonStateCopier stateCopier = new();
+        private readonly MessagePackStateCopier stateCopier = new();
 
         private TExecutionState? currentState;
 
@@ -110,6 +110,7 @@ namespace Helpers.Structure
             return state;
         }
 
+        public abstract bool ResetOnNewPart { get; }
         protected abstract Task<TExecutionState> LoadInitialState(string puzzleInput);
         protected abstract Task<(bool isComplete, string? result)> ExecutePuzzleStepPartOne();
         protected abstract Task<(bool isComplete, string? result)> ExecutePuzzleStepPartTwo();

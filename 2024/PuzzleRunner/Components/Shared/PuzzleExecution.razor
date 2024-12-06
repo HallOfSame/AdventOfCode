@@ -26,13 +26,13 @@
             }
         </MudExpansionPanel>
         <MudExpansionPanel Text="Results" Expanded="true">
-            @if (currentResult is null)
-            {
-                <span>Waiting for run</span>
-            }
-            else if (executionActive)
+            @if (executionActive)
             {
                 <MudProgressCircular Indeterminate="true" />
+            }
+            else if (currentResult is null)
+            {
+                <span>Not yet run</span>
             }
             else
             {
@@ -40,7 +40,7 @@
                     @if (currentResult.Exception is null)
                     {
                         <div style="display: flex; align-items: center">
-                            <MudChip T="string" Color="Color.Success">Success</MudChip> <span>Result: @currentResult.Result</span><MudIconButton OnClick="CopyResultToClipboard" Icon="@Icons.Material.Filled.CopyAll" />
+                            <MudChip T="string" Color="Color.Success">Success</MudChip> <span>Result: @currentResult.Result</span><MudIconButton OnClick="CopyResultToClipboard" Icon="@Icons.Material.Filled.CopyAll"/>
                         </div>
                     }
                     else
@@ -180,10 +180,11 @@
     private async Task OnPartToExecuteChange(int newValue)
     {
         puzzlePartToExecute = newValue;
-        // Make sure we don't have a corrupt state that's partly part 1 and starts running part 2
-        // This might not always be necessary
-        // Some puzzles might actually rely on part 1 running first
-        await stepExecutionPuzzle!.ResetToInitialState();
+
+        if (stepExecutionPuzzle!.ResetOnNewPart)
+        {
+            await stepExecutionPuzzle!.ResetToInitialState();
+        }
     }
 
     private async Task CopyResultToClipboard()
