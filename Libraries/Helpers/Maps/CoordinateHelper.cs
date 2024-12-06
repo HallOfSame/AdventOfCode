@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Helpers.Drawing;
 
 namespace Helpers.Maps;
@@ -39,6 +40,30 @@ public static class CoordinateHelper
         return updatedCoordinate;
     }
 
+    public static Direction TurnRight90(this Direction currentDirection)
+    {
+        return currentDirection switch
+        {
+            Direction.North => Direction.East,
+            Direction.East => Direction.South,
+            Direction.South => Direction.West,
+            Direction.West => Direction.North,
+            _ => throw new NotImplementedException("Haven't done diagonals")
+        };
+    }
+
+    public static char ToChar(this Direction direction)
+    {
+        return direction switch
+        {
+            Direction.North => '^',
+            Direction.East => '>',
+            Direction.South => 'v',
+            Direction.West => '<',
+            _ => throw new NotImplementedException("Haven't done diagonals")
+        };
+    }
+
     public static IEnumerable<Direction> InfiniteDirections(List<Direction> directionOrder)
     {
         var currentIndex = 0;
@@ -54,6 +79,21 @@ public static class CoordinateHelper
 
             currentIndex++;
         }
+    }
+
+    public static DrawableCoordinate[] ToDrawableCoordinates(this Dictionary<Coordinate, char> map,
+                                                             params Func<Coordinate, string?>[] colorSelectors)
+    {
+        return map.Select(x =>
+                              new DrawableCoordinate
+                              {
+                                  X = x.Key.X,
+                                  Y = x.Key.Y,
+                                  Text = x.Value.ToString(),
+                                  Color = colorSelectors.Select(sel => sel(x.Key))
+                                      .FirstOrDefault(clr => clr != null)
+                              })
+            .ToArray();
     }
 
     #endregion

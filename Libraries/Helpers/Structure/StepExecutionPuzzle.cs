@@ -81,11 +81,11 @@ namespace Helpers.Structure
 
         protected override async Task<string> ExecutePuzzlePartOne()
         {
-            StepExecutionResult result;
+            (bool IsCompleted, string? Result) result;
 
             do
             {
-                result = await ExecuteStepPartOne();
+                result = await ExecutePuzzleStepPartOne();
             } while (!result.IsCompleted);
 
             return result.Result!;
@@ -93,11 +93,11 @@ namespace Helpers.Structure
 
         protected override async Task<string> ExecutePuzzlePartTwo()
         {
-            StepExecutionResult result;
+            (bool IsCompleted, string? Result) result;
 
             do
             {
-                result = await ExecuteStepPartTwo();
+                result = await ExecutePuzzleStepPartTwo();
             } while (!result.IsCompleted);
 
             return result.Result!;

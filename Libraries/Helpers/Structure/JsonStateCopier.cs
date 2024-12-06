@@ -9,7 +9,7 @@ public class JsonStateCopier : IStateCopier
 {
     private readonly JsonSerializerOptions options = new()
     {
-        ReferenceHandler = ReferenceHandler.Preserve,
+        ReferenceHandler = ReferenceHandler.IgnoreCycles,
         Converters =
         {
             new CoordinateConverter()
