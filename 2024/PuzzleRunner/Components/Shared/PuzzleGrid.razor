@@ -1,7 +1,7 @@
 ﻿@using Helpers.Structure
 @using Helpers.Interfaces
 
-<MudDataGrid T="PuzzleInfo" Items="@puzzles" Style="height: 100%">
+<MudDataGrid T="PuzzleInfo" Items="@puzzles" Style="height: 100%; overflow-x: auto;">
     <Columns>
         <PropertyColumn Property="x => x.Year" />
         <PropertyColumn Property="x => x.Day" />
@@ -24,6 +24,8 @@
     protected override void OnInitialized()
     {
         puzzles = Puzzles.Select(x => x.Info)
+            .OrderByDescending(x => x.Year)
+            .ThenByDescending(x => x.Day)
             .ToArray();
         base.OnInitialized();
     }
