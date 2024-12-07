@@ -92,7 +92,8 @@ namespace PuzzleDays
             // Try adding || if allowed
             if (allowConcatenate)
             {
-                newCurrentValue = decimal.Parse($"{currentValue}{nextValue}");
+                var numberOfDigitsInNext = Math.Floor(Math.Log10((double)nextValue)) + 1;
+                newCurrentValue = currentValue * (decimal)Math.Pow(10, numberOfDigitsInNext) + nextValue;
                 if (CanBeMadeValid(expectedValue, newCurrentValue, remainingValues, true))
                 {
                     return true;
