@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Globalization;
 using Helpers.Structure;
 
 namespace PuzzleDays
@@ -46,7 +41,7 @@ namespace PuzzleDays
             foreach (var op in currentState.Operations)
             {
                 var first = op.Values.Pop();
-                if (CanBeMadeValid(op.Result, first, op.Values))
+                if (CanBeMadeValid(op.Result, first, op.Values, false))
                 {
                     result += op.Result;
                 }
@@ -57,10 +52,23 @@ namespace PuzzleDays
 
         protected override async Task<string> ExecutePuzzlePartTwo()
         {
-            throw new NotImplementedException();
+            var result = 0m;
+            // We end up modifying the stack
+            var currentState = new MessagePackStateCopier().Copy(InitialState);
+
+            foreach (var op in currentState.Operations)
+            {
+                var first = op.Values.Pop();
+                if (CanBeMadeValid(op.Result, first, op.Values, true))
+                {
+                    result += op.Result;
+                }
+            }
+
+            return result.ToString(CultureInfo.InvariantCulture);
         }
 
-        private bool CanBeMadeValid(decimal expectedValue, decimal currentValue, Stack<decimal> remainingValues)
+        private bool CanBeMadeValid(decimal expectedValue, decimal currentValue, Stack<decimal> remainingValues, bool allowConcatenate)
         {
             if (remainingValues.Count == 0)
             {
@@ -70,15 +78,25 @@ namespace PuzzleDays
             // Try adding + or *
             var nextValue = remainingValues.Pop();
             var newCurrentValue = currentValue + nextValue;
-            if (CanBeMadeValid(expectedValue, newCurrentValue, remainingValues))
+            if (CanBeMadeValid(expectedValue, newCurrentValue, remainingValues, allowConcatenate))
             {
                 return true;
             }
 
             newCurrentValue = currentValue * nextValue;
-            if (CanBeMadeValid(expectedValue, newCurrentValue, remainingValues))
+            if (CanBeMadeValid(expectedValue, newCurrentValue, remainingValues, allowConcatenate))
             {
                 return true;
+            }
+
+            // Try adding || if allowed
+            if (allowConcatenate)
+            {
+                newCurrentValue = decimal.Parse($"{currentValue}{nextValue}");
+                if (CanBeMadeValid(expectedValue, newCurrentValue, remainingValues, true))
+                {
+                    return true;
+                }
             }
 
             remainingValues.Push(nextValue);
