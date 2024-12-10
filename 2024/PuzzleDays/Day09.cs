@@ -18,6 +18,19 @@ namespace PuzzleDays
 
         protected override async Task<string> ExecutePuzzlePartOne()
         {
+            var drive = ParseHardDriveFromInput();
+
+            var compactor = DriveCompactor.Initialize(drive);
+
+            compactor.Compact();
+
+            var result = drive.GetChecksum();
+
+            return result.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private HardDrive ParseHardDriveFromInput()
+        {
             var isFile = true;
             var fileIndex = 0;
             DriveRecord? lastRecord = null;
@@ -60,19 +73,20 @@ namespace PuzzleDays
             {
                 FirstRecord = records[0]
             };
-
-            var compactor = DriveCompactor.Initialize(drive);
-
-            compactor.Compact();
-
-            var result = drive.GetChecksum();
-
-            return result.ToString(CultureInfo.InvariantCulture);
+            return drive;
         }
 
         protected override async Task<string> ExecutePuzzlePartTwo()
         {
-            throw new NotImplementedException();
+            var drive = ParseHardDriveFromInput();
+
+            var compactor = DriveCompactor.Initialize(drive);
+
+            compactor.CompactFiles();
+
+            var result = drive.GetChecksum();
+
+            return result.ToString(CultureInfo.InvariantCulture);
         }
 
         public class DriveCompactor
@@ -114,15 +128,17 @@ namespace PuzzleDays
                     throw new InvalidOperationException("Found no files");
                 }
 
-                return new DriveCompactor(earliestFreeRecord, latestFileRecord);
+                return new DriveCompactor(earliestFreeRecord, latestFileRecord, drive);
             }
 
-            private DriveCompactor(DriveRecord earliestFree, DriveRecord latestFile)
+            private DriveCompactor(DriveRecord earliestFree, DriveRecord latestFile, HardDrive drive)
             {
                 earliestFreeRecord = earliestFree;
                 latestFileRecord = latestFile;
+                fullDrive = drive;
             }
 
+            private HardDrive fullDrive;
             private DriveRecord earliestFreeRecord;
             private DriveRecord latestFileRecord;
 
@@ -201,7 +217,76 @@ namespace PuzzleDays
                 }
             }
 
-            private DriveRecord? FindNextFreeRecord()
+            public void CompactFiles()
+            {
+                earliestFreeRecord = fullDrive.FirstRecord;
+
+                while (true)
+                {
+                    var currentFileSize = latestFileRecord.Size;
+                    var freeRecordThatFits = FindNextFreeRecord(currentFileSize);
+
+                    if (freeRecordThatFits is null)
+                    {
+                        // Can't move this file
+                        var nextFileToMove = FindNextFileToMove();
+
+                        if (nextFileToMove is null)
+                        {
+                            break;
+                        }
+
+                        latestFileRecord = nextFileToMove;
+
+                        continue;
+                    }
+
+                    var movedFile = new DriveRecord
+                    {
+                        IsFile = true,
+                        FileIndex = latestFileRecord.FileIndex,
+                        Size = currentFileSize
+                    };
+
+                    // Place it before the earliest free record
+                    InsertBetween(freeRecordThatFits.Prev, freeRecordThatFits, movedFile);
+                    // Update the sizes (one should be going to 0, maybe even both will)
+                    freeRecordThatFits.Size -= movedFile.Size;
+                    latestFileRecord.Size -= movedFile.Size;
+
+                    // We also created free space where the file used to be
+                    var newFreeRecord = new DriveRecord
+                    {
+                        IsFile = false,
+                        Size = movedFile.Size
+                    };
+
+                    InsertBetween(latestFileRecord, latestFileRecord.Next, newFreeRecord);
+
+                    if (freeRecordThatFits.Size == 0)
+                    {
+                        // We completely used this space and need to remove if from the linked list
+                        RemoveRecord(freeRecordThatFits);
+                    }
+
+                    if (latestFileRecord.Size == 0)
+                    {
+                        // We moved the rest of this file, delete the empty record
+                        RemoveRecord(latestFileRecord);
+
+                        var nextFileRecord = FindNextFileToMove();
+
+                        if (nextFileRecord is null)
+                        {
+                            break;
+                        }
+
+                        latestFileRecord = nextFileRecord;
+                    }
+                }
+            }
+
+            private DriveRecord? FindNextFreeRecord(int? requiredSize = null)
             {
                 var current = earliestFreeRecord.Next;
 
@@ -218,7 +303,7 @@ namespace PuzzleDays
                         return null;
                     }
 
-                    if (!current.IsFile)
+                    if (!current.IsFile && (requiredSize is null || current.Size >= requiredSize))
                     {
                         return current;
                     }
