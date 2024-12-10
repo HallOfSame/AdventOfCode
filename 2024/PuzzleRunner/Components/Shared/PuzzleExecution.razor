@@ -55,10 +55,22 @@
             }
         </MudExpansionPanel>
 
-        @if (visualizer is not null)
+        @if (HasVisual)
         {
             <MudExpansionPanel Text="Visualization" Expanded="true">
-                <BlazorCanvas CoordinatesToDraw="currentVisual"/>
+                @if (_2dVisualizer is not null)
+                {
+                    <BlazorCanvas CoordinatesToDraw="currentVisual"/>
+                }
+                @if (textVisualizer is not null)
+                {
+                    var numberToStartAt = Math.Max(outputText.Count - 10, 0);
+                    @for (var i = numberToStartAt; i < outputText.Count; i++)
+                    {
+                        var i1 = i;
+                        <MudText @key="i1">@i1: @outputText[i1]</MudText>
+                    }
+                }
             </MudExpansionPanel>
         }
     </MudExpansionPanels>
@@ -72,24 +84,28 @@
 
     private IStepExecutionPuzzle? stepExecutionPuzzle;
     private ISingleExecutionPuzzle? singleExecutionPuzzle;
-    private IVisualize2d? visualizer;
+    private IVisualize2d? _2dVisualizer;
+    private IVisualizeText? textVisualizer;
     private ExecutionResult? currentResult;
     private bool executionActive;
     private DrawableCoordinate[] currentVisual = [];
     private int puzzlePartToExecute = 1;
     private List<object> stateBeforeStep = [null!];
     private int currentStep;
+    private List<string> outputText = [];
 
     private bool resetRequired;
     private bool DisablePrevStep => resetRequired || currentStep == 0;
     private bool DisableNextStep => resetRequired || currentResult is StepExecutionResult { IsCompleted: true };
+    private bool HasVisual => _2dVisualizer is not null || textVisualizer is not null;
 
     protected override void OnInitialized()
     {
         stepExecutionPuzzle = Puzzle as IStepExecutionPuzzle;
         singleExecutionPuzzle = Puzzle as ISingleExecutionPuzzle;
         // ReSharper disable once SuspiciousTypeConversion.Global
-        visualizer = Puzzle as IVisualize2d;
+        _2dVisualizer = Puzzle as IVisualize2d;
+        textVisualizer = Puzzle as IVisualizeText;
 
         base.OnInitialized();
     }
@@ -121,10 +137,16 @@
     {
         if (currentStep == 1)
         {
+            outputText.Clear();
             await ResetPuzzle();
         }
         else
         {
+            if (outputText.Count > 0)
+            {
+                outputText.RemoveAt(outputText.Count - 1);
+            }
+
             await Execution(async () => await stepExecutionPuzzle!.RevertState(stateBeforeStep[currentStep]));
         }
 
@@ -169,12 +191,20 @@
 
     private void UpdateVisual()
     {
-        if (executionActive || visualizer is null)
+        if (executionActive || !HasVisual)
         {
             return;
         }
 
-        currentVisual = visualizer.GetCoordinates();
+        if (_2dVisualizer is not null)
+        {
+            currentVisual = _2dVisualizer.GetCoordinates();
+        }
+
+        if (textVisualizer is not null)
+        {
+            outputText.Add(textVisualizer.GetText());
+        }
     }
 
     private async Task OnPartToExecuteChange(int newValue)
