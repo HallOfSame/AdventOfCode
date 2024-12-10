@@ -255,6 +255,7 @@ namespace PuzzleDays
                     latestFileRecord.Size -= movedFile.Size;
 
                     // We also created free space where the file used to be
+                    // I was worried this might need to consolidate with surrounding free records, but my solve worked without it
                     var newFreeRecord = new DriveRecord
                     {
                         IsFile = false,
