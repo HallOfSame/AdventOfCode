@@ -351,3 +351,6 @@ MigrationBackup/
 
 # Ignore protected app settings
 appsettings.Local.json
+
+# Rider
+.idea/
