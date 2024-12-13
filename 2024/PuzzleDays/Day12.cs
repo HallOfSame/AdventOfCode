@@ -18,11 +18,13 @@ public class Day12 : SingleExecutionPuzzle<Day12.ExecState>
         return new ExecState(grid.ToDictionary(x => x.Coordinate, x => x.Value));
     }
 
+    private List<Region> regions = [];
+
     protected override async Task<string> ExecutePuzzlePartOne()
     {
         var visited = new HashSet<Coordinate>();
         var nextStartingPoint = InitialState.GardenMap.First();
-        var regions = new List<Region>();
+        regions.Clear();
 
         do
         {
@@ -40,7 +42,13 @@ public class Day12 : SingleExecutionPuzzle<Day12.ExecState>
 
     protected override async Task<string> ExecutePuzzlePartTwo()
     {
-        throw new NotImplementedException();
+        if (regions.Count == 0)
+        {
+            throw new InvalidOperationException("Run part 1 first");
+        }
+        
+        var result = regions.Sum(r => r.GetArea() * r.GetSides(InitialState.GardenMap));
+        return result.ToString();
     }
 
     private Region ExploreRegion(KeyValuePair<Coordinate, char> startingPoint)
@@ -114,6 +122,62 @@ public class Day12 : SingleExecutionPuzzle<Day12.ExecState>
             var totalSides = Coordinates.Count * 4;
             var sharedSides = neighborCount;
             return totalSides - sharedSides;
+        }
+
+        public int GetSides(Dictionary<Coordinate, char> map)
+        {
+            var corners = Coordinates.Select(x =>
+                                                      {
+                                                          var neighbors = x.GetNeighbors(true);
+                                                          var cornerCount = 0;
+
+                                                          if (IsCorner(neighbors, map, Direction.East, Direction.North, Direction.NorthEast))
+                                                          {
+                                                              cornerCount++;
+                                                          }
+                                                          
+                                                          if (IsCorner(neighbors, map, Direction.East, Direction.South, Direction.SouthEast))
+                                                          {
+                                                              cornerCount++;
+                                                          }
+                                                          
+                                                          if (IsCorner(neighbors, map, Direction.West, Direction.North, Direction.NorthWest))
+                                                          {
+                                                              cornerCount++;
+                                                          }
+                                                          
+                                                          if (IsCorner(neighbors, map, Direction.West, Direction.South, Direction.SouthWest))
+                                                          {
+                                                              cornerCount++;
+                                                          }
+
+                                                          return cornerCount;
+                                                      })
+                                               .Sum();
+
+            return corners;
+        }
+
+        private bool IsCorner(List<Coordinate> neighbors, Dictionary<Coordinate, char> map, Direction one, Direction two, Direction combined)
+        {
+            var oneIsSame = map.TryGetValue(neighbors[(int)one], out var oneChar) && oneChar == this.RegionId;   
+            var twoIsSame = map.TryGetValue(neighbors[(int)two], out var twoChar) && twoChar == this.RegionId;   
+            
+            if (!oneIsSame && !twoIsSame)
+            {
+                // Convex corner, both directions are different
+                return true;
+            }
+            
+            var combinedIsSame = map.TryGetValue(neighbors[(int)combined], out var combinedChar) && combinedChar == this.RegionId;   
+
+            if ((oneIsSame && twoIsSame) && !combinedIsSame)
+            {
+                // Two directions are same, but combined isn't so concave corner
+                return true;
+            }
+
+            return false;
         }
     }
 }
