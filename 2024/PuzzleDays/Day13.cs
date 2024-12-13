@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Globalization;
+using System.Text.RegularExpressions;
 using Helpers.Maps;
 using Helpers.Structure;
 
@@ -59,7 +60,46 @@ namespace PuzzleDays
 
         protected override async Task<string> ExecutePuzzlePartTwo()
         {
-            throw new NotImplementedException();
+            var result = 0m;
+
+            foreach (var machine in InitialState.Machines)
+            {
+                var machineCopy = machine with
+                {
+                    PrizeLocation = new Coordinate(machine.PrizeLocation.X + 10000000000000,
+                                                   machine.PrizeLocation.Y + 10000000000000)
+                };
+                var thisMachine = FindPart2Cost(machineCopy);
+
+                result += thisMachine;
+            }
+
+            return result.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static decimal FindPart2Cost(MachineSettings machine)
+        {
+            /*
+             * Math:
+             * A = (p_x*b_y - prize_y*b_x) / (a_x*b_y - a_y*b_x)
+               B = (a_x*p_y - a_y*p_x) / (a_x*b_y - a_y*b_x)
+             */
+            var pX = machine.PrizeLocation.X;
+            var pY = machine.PrizeLocation.Y;
+            var aX = machine.AButtonMove.X;
+            var aY = machine.AButtonMove.Y;
+            var bX = machine.BButtonMove.X;
+            var bY = machine.BButtonMove.Y;
+            var aPresses = ((pX * bY) - (pY * bX)) / ((bY * aX) - (bX * aY));
+            var bPresses = ((pX * aY) - (pY * aX)) / ((bX * aY) - (bY * aX));
+
+            // This always solves the equation, but if aPresses or bPresses isn't a whole number it isn't a valid puzzle solution
+            if (decimal.IsInteger(aPresses) && decimal.IsInteger(bPresses))
+            {
+                return (aPresses * 3) + bPresses;
+            }
+
+            return 0;
         }
 
         private readonly HashSet<Coordinate> invalidBranches = [];
