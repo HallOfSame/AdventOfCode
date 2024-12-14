@@ -1,5 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using Helpers.Drawing;
+using Helpers.Extensions;
 using Helpers.Interfaces;
 using Helpers.Maps;
 using Helpers.Structure;
@@ -76,8 +77,42 @@ namespace PuzzleDays
 
         protected override async Task<(bool isComplete, string? result)> ExecutePuzzleStepPartTwo()
         {
-            throw new NotImplementedException();
+            // Look for a state where they all touch at least one other robot??
+            var updatedRobots = new List<Robot>(CurrentState.Robots.Count);
+            foreach (var robot in CurrentState.Robots)
+            {
+                updatedRobots.Add(Move(robot, CurrentState.Height, CurrentState.Width));
+            }
+
+            var newSeconds = CurrentState.SecondsPassed + 1;
+
+            CurrentState = CurrentState with { Robots = updatedRobots, SecondsPassed = newSeconds };
+
+            // I am kind of shocked this works, but it did
+            // Basically the thought process was if they draw a picture they must be around each other
+            // So I started checking how many robots had at least one neighbor robot
+            // Having the check wait for 0 kept running, so I assumed that not all the robots drew the picture
+            // That was when I added in logging the min every 1000 iterations
+            // Once I did that, it only took a few logs to see that it got down to 132 and never dropped below it
+            // So I stopped the program when we hit 132 robots without neighbors and boom, christmas tree
+            var positionHash = updatedRobots.Select(x => x.Position)
+                .ToHashSet();
+            var robotsWithoutNeighbors = updatedRobots
+                .Count(x => !x.Position.GetNeighbors(true)
+                           .Any(n => positionHash.Contains(n)));
+
+            // min = Math.Min(min, robotsWithoutNeighbors);
+
+            //if (newSeconds % 1000 == 0)
+            //{
+            //    Console.WriteLine(min);
+            //}
+            
+            var complete = robotsWithoutNeighbors == 132;
+            return (complete, CurrentState.SecondsPassed.ToString());
         }
+
+        private int min = int.MaxValue;
 
         private static Robot Move(Robot robot, int height, int width)
         {
