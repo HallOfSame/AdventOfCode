@@ -13,7 +13,7 @@ public class Day15 : StepExecutionPuzzle<Day15.ExecState>, IVisualize2d
     public record ExecState(Dictionary<Coordinate, char> Map, Coordinate Robot, List<char> Moves, int CurrentMoveIndex);
 
     public override PuzzleInfo Info => new(2024, 15, "Warehouse Woes");
-    public override bool ResetOnNewPart => false;
+    public override bool ResetOnNewPart => true;
     protected override async Task<ExecState> LoadInitialState(string puzzleInput)
     {
         var inputSplit = puzzleInput.Trim().Split('\n');
@@ -56,12 +56,55 @@ public class Day15 : StepExecutionPuzzle<Day15.ExecState>, IVisualize2d
             .Key;
         CurrentState = CurrentState with { Robot = newRobotLocation, CurrentMoveIndex = CurrentState.CurrentMoveIndex + 1 };
         
-        return (CurrentState.CurrentMoveIndex == CurrentState.Moves.Count, GetGpsLevelOfBoxes().ToString(CultureInfo.InvariantCulture));
+        return (CurrentState.CurrentMoveIndex == CurrentState.Moves.Count, GetGpsLevelOfBoxes('O').ToString(CultureInfo.InvariantCulture));
     }
+
+    private Dictionary<Coordinate, char>? partTwoMap;
 
     protected override async Task<(bool isComplete, string? result)> ExecutePuzzleStepPartTwo()
     {
-        throw new NotImplementedException();
+        if (partTwoMap is null)
+        {
+            partTwoMap = new Dictionary<Coordinate, char>();
+            foreach (var (coordinate, value) in CurrentState.Map)
+            {
+                var x = coordinate.X * 2;
+                var newValues = new char[2];
+
+                switch (value)
+                {
+                    case '#':
+                        newValues[0] = '#';
+                        newValues[1] = '#';
+                        break;
+                    case 'O':
+                        newValues[0] = '[';
+                        newValues[1] = ']';
+                        break;
+                    case '.':
+                        newValues[0] = '.';
+                        newValues[1] = '.';
+                        break;
+                    case '@':
+                        newValues[0] = '@';
+                        newValues[1] = '.';
+                        break;
+                    default:
+                        throw new InvalidOperationException("Unexpected char in map");
+                }
+                
+                partTwoMap[new Coordinate(x, coordinate.Y)] = newValues[0];
+                partTwoMap[new Coordinate(x + 1, coordinate.Y)] = newValues[1];
+            }
+        }
+        
+        var nextInstruction = CurrentState.Moves[CurrentState.CurrentMoveIndex];
+        ProcessMovePart2(nextInstruction);
+        var newRobotLocation = partTwoMap.Single(x => x.Value == '@')
+            .Key;
+        CurrentState = CurrentState with { Robot = newRobotLocation, CurrentMoveIndex = CurrentState.CurrentMoveIndex + 1 };
+        
+        return (CurrentState.CurrentMoveIndex == CurrentState.Moves.Count, GetGpsLevelOfBoxes('[').ToString(CultureInfo.InvariantCulture));
     }
 
     private void ProcessMove(char move)
@@ -126,12 +169,97 @@ public class Day15 : StepExecutionPuzzle<Day15.ExecState>, IVisualize2d
             }
         }
     }
+    
+    private void ProcessMovePart2(char move)
+    {
+        var robotLocation = CurrentState.Robot;
+        var moveDirection = CoordinateHelper.ParseDirection(move);
+        var inNextSpace = robotLocation.Move(moveDirection);
+        
+        if (partTwoMap![inNextSpace] == '#')
+        {
+            // Can't move into a wall
+            return;
+        }
 
-    private decimal GetGpsLevelOfBoxes()
+        if (partTwoMap[inNextSpace] == '.')
+        {
+            partTwoMap[inNextSpace] = '@';
+            partTwoMap[robotLocation] = '.';
+            return;
+        }
+
+        if (partTwoMap[inNextSpace] == '[' || partTwoMap[inNextSpace] == ']')
+        {
+            var moveIsValid = true;
+            var nexts = new List<Coordinate>
+            {
+                inNextSpace
+            };
+            if (partTwoMap[inNextSpace] == '[')
+            {
+                nexts.Add(inNextSpace.Move(Direction.East));
+            }
+            else
+            {
+                nexts.Add(inNextSpace.Move(Direction.West));
+            }
+            
+            var coordinatesToMove = new List<Coordinate> { robotLocation, nexts[0], nexts[1] };
+            do
+            {
+                var nextsCopy = nexts.ToList();
+                nexts.Clear();
+                foreach (var pieceThatNeedsToMove in nextsCopy)
+                {
+                    if (!moveIsValid)
+                    {
+                        break;
+                    }
+                    
+                    var nextSpaceInDirection = pieceThatNeedsToMove.Move(moveDirection);
+
+                    if (partTwoMap[nextSpaceInDirection] == '#')
+                    {
+                        // Invalid to move into a wall
+                        moveIsValid = false;
+                        break;
+                    }
+
+                    if (partTwoMap[nextSpaceInDirection] == '.')
+                    {
+                        // Empty space, this is good to move
+                        break;
+                    }
+
+                    if (partTwoMap[nextSpaceInDirection] == '[' || partTwoMap[nextSpaceInDirection] == ']')
+                    {
+                        // Another box, need to check both sides of it
+                        coordinatesToMove.Add(nextSpaceInDirection);
+                        next = nextSpaceInDirection;
+                    }
+                }
+            } while (true);
+
+            if (moveIsValid)
+            {
+                // Process moves in from the end
+                coordinatesToMove.Reverse();
+
+                foreach (var coordinate in coordinatesToMove)
+                {
+                    partTwoMap[coordinate.GetDirection(moveDirection)] = CurrentState.Map[coordinate];
+                    partTwoMap[coordinate] = '.';
+                }
+            }
+        }
+    }
+
+    private decimal GetGpsLevelOfBoxes(char boxChar)
     {
         var height = CurrentState.Map.Max(x => x.Key.Y);
         
-        var boxes = CurrentState.Map.Where(x => x.Value == 'O').Select(x => x.Key);
+        var boxes = CurrentState.Map.Where(x => x.Value == boxChar).Select(x => x.Key);
 
         return boxes.Select(x => ((height - x.Y) * 100) + x.X)
             .Sum();
