@@ -64,6 +64,18 @@ public static class CoordinateHelper
         };
     }
 
+    public static Direction ParseDirection(char direction)
+    {
+        return direction switch
+        {
+            '^' => Direction.North,
+            '>' => Direction.East,
+            'v' => Direction.South,
+            '<' => Direction.West,
+            _ => throw new NotImplementedException("Diagonal not supported")
+        };
+    }
+
     public static IEnumerable<Direction> InfiniteDirections(List<Direction> directionOrder)
     {
         var currentIndex = 0;
