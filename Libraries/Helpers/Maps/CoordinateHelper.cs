@@ -52,6 +52,18 @@ public static class CoordinateHelper
         };
     }
 
+    public static Direction TurnLeft90(this Direction currentDirection)
+    {
+        return currentDirection switch
+        {
+            Direction.North => Direction.West,
+            Direction.East => Direction.North,
+            Direction.South => Direction.East,
+            Direction.West => Direction.South,
+            _ => throw new NotImplementedException("Haven't done diagonals")
+        };
+    }
+
     public static char ToChar(this Direction direction)
     {
         return direction switch
