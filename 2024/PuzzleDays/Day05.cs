@@ -1,6 +1,7 @@
 ﻿using Helpers.Structure;
 
 using System.Text.RegularExpressions;
+using InputStorageDatabase;
 
 namespace PuzzleDays
 {
@@ -12,7 +13,7 @@ namespace PuzzleDays
 
         public override PuzzleInfo Info => new(2024, 05, "Print Queue");
 
-        protected override async Task<ExecState> LoadInputState(string puzzleInput)
+        protected override async Task<ExecState> LoadInputState(string puzzleInput, PuzzleInputType inputType)
         {
             var lines = puzzleInput.Split('\n');
             var readingRules = true;

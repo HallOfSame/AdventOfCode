@@ -4,6 +4,7 @@ using Helpers.FileReaders;
 using Helpers.Interfaces;
 using Helpers.Maps;
 using Helpers.Structure;
+using InputStorageDatabase;
 
 namespace PuzzleDays
 {
@@ -13,7 +14,7 @@ namespace PuzzleDays
 
         public override PuzzleInfo Info => new(2024, 8, "Resonant Collinearity");
 
-        protected override async Task<ExecState> LoadInputState(string puzzleInput)
+        protected override async Task<ExecState> LoadInputState(string puzzleInput, PuzzleInputType inputType)
         {
             var grid = await new GridFileReader().ReadFromString(puzzleInput);
 

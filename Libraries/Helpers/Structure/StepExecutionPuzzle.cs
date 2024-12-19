@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Helpers.Exceptions;
 using Helpers.Interfaces;
+using InputStorageDatabase;
 
 namespace Helpers.Structure
 {
@@ -103,7 +104,9 @@ namespace Helpers.Structure
             return result.Result!;
         }
 
-        protected sealed override async Task<TExecutionState> LoadInputState(string puzzleInput)
+        protected sealed override async Task<TExecutionState> LoadInputState(
+            string puzzleInput,
+            PuzzleInputType inputType)
         {
             var state = await LoadInitialState(puzzleInput);
             CurrentState = stateCopier.Copy(state);

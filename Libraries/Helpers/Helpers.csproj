@@ -22,4 +22,8 @@
     <PackageReference Include="OptimizedPriorityQueue" Version="5.1.0" />
     <PackageReference Include="Spectre.Console" Version="0.43.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\InputStorageDatabase\InputStorageDatabase.csproj" />
+  </ItemGroup>
 </Project>

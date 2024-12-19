@@ -78,7 +78,7 @@
 
     private async Task LoadSelectedInput()
     {
-        await puzzle.LoadInput(puzzleInput!.Input);
+        await puzzle.LoadInput(puzzleInput!.Input, puzzleInput!.InputType);
 
         readyToExecute = true;
     }

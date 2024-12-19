@@ -1,4 +1,5 @@
 ﻿using Helpers.Structure;
+using InputStorageDatabase;
 
 namespace PuzzleDays;
 
@@ -6,7 +7,7 @@ public class Day01 : SingleExecutionPuzzle<Day01.ExecState>
 {
     public override PuzzleInfo Info => new(2024, 1, "Historian Hysteria");
 
-    protected override async Task<ExecState> LoadInputState(string puzzleInput)
+    protected override async Task<ExecState> LoadInputState(string puzzleInput, PuzzleInputType inputType)
     {
         var left = new List<int>();
         var right = new List<int>();

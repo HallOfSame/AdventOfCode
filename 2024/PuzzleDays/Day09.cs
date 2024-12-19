@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using Helpers.Structure;
+using InputStorageDatabase;
 
 namespace PuzzleDays
 {
@@ -11,7 +12,7 @@ namespace PuzzleDays
         public record ExecState(string Input);
 
         public override PuzzleInfo Info => new(2024, 9, "Drive Defragmenter");
-        protected override async Task<ExecState> LoadInputState(string puzzleInput)
+        protected override async Task<ExecState> LoadInputState(string puzzleInput, PuzzleInputType inputType)
         {
             return new ExecState(puzzleInput.Trim());
         }

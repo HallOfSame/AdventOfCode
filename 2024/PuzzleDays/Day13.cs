@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 using Helpers.Maps;
 using Helpers.Structure;
+using InputStorageDatabase;
 
 namespace PuzzleDays
 {
@@ -10,7 +11,7 @@ namespace PuzzleDays
         public record ExecState(List<MachineSettings> Machines);
 
         public override PuzzleInfo Info => new(2024, 13, "Claw Contraption");
-        protected override async Task<ExecState> LoadInputState(string puzzleInput)
+        protected override async Task<ExecState> LoadInputState(string puzzleInput, PuzzleInputType inputType)
         {
             puzzleInput = puzzleInput.Trim();
 

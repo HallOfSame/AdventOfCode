@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using Helpers.Structure;
+using InputStorageDatabase;
 
 namespace PuzzleDays
 {
@@ -11,7 +12,7 @@ namespace PuzzleDays
 
         public override PuzzleInfo Info => new(2024, 7, "Bridge Repair");
 
-        protected override async Task<ExecState> LoadInputState(string puzzleInput)
+        protected override async Task<ExecState> LoadInputState(string puzzleInput, PuzzleInputType inputType)
         {
             var input = puzzleInput.Trim();
             var operations = new List<Operation>();

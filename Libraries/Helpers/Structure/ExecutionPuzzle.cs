@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using Helpers.Exceptions;
 using Helpers.Interfaces;
+using InputStorageDatabase;
 
 namespace Helpers.Structure
 {
@@ -51,11 +52,11 @@ namespace Helpers.Structure
             }
         }
 
-        public async Task LoadInput(string puzzleInput)
+        public async Task LoadInput(string puzzleInput, PuzzleInputType inputType)
         {
             try
             {
-                initialState = await LoadInputState(puzzleInput);
+                initialState = await LoadInputState(puzzleInput, inputType);
             }
             catch (Exception ex)
             {
@@ -65,7 +66,7 @@ namespace Helpers.Structure
 
         public abstract PuzzleInfo Info { get; }
 
-        protected abstract Task<TExecutionState> LoadInputState(string puzzleInput);
+        protected abstract Task<TExecutionState> LoadInputState(string puzzleInput, PuzzleInputType inputType);
         protected abstract Task<string> ExecutePuzzlePartOne();
         protected abstract Task<string> ExecutePuzzlePartTwo();
     }

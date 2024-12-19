@@ -2,6 +2,7 @@
 using Helpers.FileReaders;
 using Helpers.Maps;
 using Helpers.Structure;
+using InputStorageDatabase;
 
 namespace PuzzleDays;
 
@@ -11,7 +12,7 @@ public class Day12 : SingleExecutionPuzzle<Day12.ExecState>
 
     public override PuzzleInfo Info => new(2024, 12, "Garden Groups");
 
-    protected override async Task<ExecState> LoadInputState(string puzzleInput)
+    protected override async Task<ExecState> LoadInputState(string puzzleInput, PuzzleInputType inputType)
     {
         var grid = await new GridFileReader().ReadFromString(puzzleInput.Trim());
         

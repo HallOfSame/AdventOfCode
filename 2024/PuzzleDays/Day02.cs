@@ -1,4 +1,5 @@
 ﻿using Helpers.Structure;
+using InputStorageDatabase;
 
 namespace PuzzleDays
 {
@@ -27,7 +28,7 @@ namespace PuzzleDays
                                .ToString();
         }
 
-        protected override async Task<ExecState> LoadInputState(string puzzleInput)
+        protected override async Task<ExecState> LoadInputState(string puzzleInput, PuzzleInputType inputType)
         {
             var lines = puzzleInput.Trim().Split('\n');
 

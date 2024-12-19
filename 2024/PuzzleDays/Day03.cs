@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Helpers.Structure;
+using InputStorageDatabase;
 
 namespace PuzzleDays
 {
@@ -9,7 +10,7 @@ namespace PuzzleDays
         public record ExecState(string MemoryValue);
 
         public override PuzzleInfo Info => new(2024, 03, "Mull It Over");
-        protected override async Task<Day03.ExecState> LoadInputState(string puzzleInput)
+        protected override async Task<ExecState> LoadInputState(string puzzleInput, PuzzleInputType inputType)
         {
             return new ExecState(puzzleInput);
         }

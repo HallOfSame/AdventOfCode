@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Helpers.Structure;
+using InputStorageDatabase;
 
 namespace Helpers.Interfaces;
 
@@ -38,5 +39,5 @@ public interface IPuzzle
     /// Loads the puzzle input as a string.
     /// I think this will be safe to assume, basically every puzzle is a (possibly multiline) string at the end of the day.
     /// </summary>
-    Task LoadInput(string puzzleInput);
+    Task LoadInput(string puzzleInput, PuzzleInputType inputType);
 }

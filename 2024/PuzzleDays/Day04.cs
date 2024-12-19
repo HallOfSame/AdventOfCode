@@ -4,6 +4,7 @@ using Helpers.FileReaders;
 using Helpers.Interfaces;
 using Helpers.Maps;
 using Helpers.Structure;
+using InputStorageDatabase;
 
 namespace PuzzleDays
 {
@@ -12,7 +13,7 @@ namespace PuzzleDays
         public record ExecState(Dictionary<Coordinate, char> Input);
 
         public override PuzzleInfo Info => new(2024, 04, "Ceres Search");
-        protected override async Task<ExecState> LoadInputState(string puzzleInput)
+        protected override async Task<ExecState> LoadInputState(string puzzleInput, PuzzleInputType inputType)
         {
             var coordinates = await new GridFileReader().ReadFromString(puzzleInput);
 
