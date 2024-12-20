@@ -34,7 +34,11 @@ namespace PuzzleDays
 
         protected override async Task<string> ExecutePuzzlePartTwo()
         {
-            throw new NotImplementedException();
+            var memo = new Dictionary<string, long>();
+            var designsWeCanMake = InitialState.Designs.Select(x => WaysToMakePattern(x, memo))
+                .ToList();
+
+            return designsWeCanMake.Sum().ToString();
         }
 
         private bool CanMakePattern(string remainingDesign, Dictionary<string, bool> memo)
@@ -70,6 +74,38 @@ namespace PuzzleDays
 
             memo[remainingDesign] = false;
             return false;
+        }
+
+        private long WaysToMakePattern(string remainingDesign, Dictionary<string, long> memo)
+        {
+            if (memo.TryGetValue(remainingDesign, out var existingResult))
+            {
+                return existingResult;
+            }
+
+            var waysToMake = 0L;
+
+            foreach (var towel in InitialState.Towels)
+            {
+                if (!remainingDesign.StartsWith(towel))
+                {
+                    continue;
+                }
+
+                if (towel.Length == remainingDesign.Length)
+                {
+                    waysToMake++;
+                    continue;
+                }
+
+                var leftover = remainingDesign[towel.Length..];
+
+                var waysToMakeLeftover = WaysToMakePattern(leftover, memo);
+                waysToMake += waysToMakeLeftover;
+            }
+
+            memo[remainingDesign] = waysToMake;
+            return waysToMake;
         }
     }
 }
