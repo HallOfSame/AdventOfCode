@@ -26,7 +26,7 @@ namespace PuzzleDays
 
             foreach (var sequence in InitialState.Sequences)
             {
-                var minMoves = GetMinMovesForSequence(sequence, 1, robotThreeKeypadMoves, directionalKeypadMoves);
+                var minMoves = GetMinMovesForSequence(sequence, robotThreeKeypadMoves, directionalKeypadMoves);
                 var numericPartOfSequence = int.Parse(sequence.Replace("A", string.Empty));
                 result += minMoves * numericPartOfSequence;
             }
@@ -34,7 +34,7 @@ namespace PuzzleDays
             return result.ToString();
         }
 
-        private static int GetMinMovesForSequence(string sequence, int intermediateRobots, Dictionary<(char start, char end), List<string>> robotThreeKeypadMoves, Dictionary<(char start, char end), List<string>> directionalKeypadMoves)
+        private int GetMinMovesForSequence(string sequence, Dictionary<(char start, char end), List<string>> robotThreeKeypadMoves, Dictionary<(char start, char end), List<string>> directionalKeypadMoves)
         {
             // At each index, it's the options robot 2 has
             var robotTwoMoveOptions = new List<List<string>>();
@@ -51,54 +51,6 @@ namespace PuzzleDays
             var robotTwoConsolidated = new List<string>();
             ConsolidateOptions(robotTwoMoveOptions, 0, string.Empty, robotTwoConsolidated);
 
-            var currentConsolidated = robotTwoConsolidated;
-
-            while (intermediateRobots > 0)
-            {
-                currentConsolidated =
-                    GetConsolidatedListForIntermediate(directionalKeypadMoves, currentConsolidated);
-
-                // TODO I'm not even sure this logic is valid
-                // It doesn't make much of a difference though, the exponential growth is still too much
-                var minLen = currentConsolidated.Min(x => x.Length);
-                currentConsolidated = currentConsolidated.Where(x => x.Length == minLen)
-                    .ToList();
-
-                intermediateRobots--;
-            }
-
-            // Now we have the moves for robot one
-            // Repeat the process but for moves we could make
-            var youConsolidated = new List<string>();
-            var robotOnePointer = 'A';
-
-            foreach (var robotOneMoveList in currentConsolidated)
-            {
-                var youMoveOptions = new List<List<string>>();
-
-                foreach (var moveChar in robotOneMoveList)
-                {
-                    if (moveChar == robotOnePointer)
-                    {
-                        youMoveOptions.Add(["A"]);
-                        continue;
-                    }
-
-                    youMoveOptions.Add(directionalKeypadMoves[(robotOnePointer, moveChar)]);
-                    robotOnePointer = moveChar;
-                }
-
-                ConsolidateOptions(youMoveOptions, 0, string.Empty, youConsolidated);
-            }
-
-            youConsolidated = youConsolidated.Distinct()
-                .ToList();
-
-            return youConsolidated.Min(x => x.Length);
-        }
-
-        private static List<string> GetConsolidatedListForIntermediate(Dictionary<(char start, char end), List<string>> directionalKeypadMoves, List<string> robotTwoConsolidated)
-        {
             var robotOneConsolidated = new List<string>();
             var robotTwoPointer = 'A';
 
@@ -127,24 +79,40 @@ namespace PuzzleDays
             // Make sure no duplicates (probably could've used a hashset)
             robotOneConsolidated = robotOneConsolidated.Distinct()
                 .ToList();
-            return robotOneConsolidated;
+
+            // Now we have the moves for robot one
+            // Repeat the process but for moves we could make
+            var youConsolidated = new List<string>();
+            var robotOnePointer = 'A';
+
+            foreach (var robotOneMoveList in robotOneConsolidated)
+            {
+                var youMoveOptions = new List<List<string>>();
+
+                foreach (var moveChar in robotOneMoveList)
+                {
+                    if (moveChar == robotOnePointer)
+                    {
+                        youMoveOptions.Add(["A"]);
+                        continue;
+                    }
+
+                    youMoveOptions.Add(directionalKeypadMoves[(robotOnePointer, moveChar)]);
+                    robotOnePointer = moveChar;
+                }
+
+                ConsolidateOptions(youMoveOptions, 0, string.Empty, youConsolidated);
+            }
+
+            youConsolidated = youConsolidated.Distinct()
+                .ToList();
+
+            return youConsolidated.Min(x => x.Length);
         }
 
         protected override async Task<string> ExecutePuzzlePartTwo()
         {
-            var robotThreeKeypadMoves = GetAllNumericKeypadMoves();
-            var directionalKeypadMoves = GetAllDirectionalKeypadMoves();
-
-            var result = 0;
-
-            foreach (var sequence in InitialState.Sequences)
-            {
-                var minMoves = GetMinMovesForSequence(sequence, 24, robotThreeKeypadMoves, directionalKeypadMoves);
-                var numericPartOfSequence = int.Parse(sequence.Replace("A", string.Empty));
-                result += minMoves * numericPartOfSequence;
-            }
-
-            return result.ToString();
+            throw new NotImplementedException();
         }
 
         private static void ConsolidateOptions(List<List<string>> robotTwoMoveOptions, int index, string current, List<string> results)
