@@ -25,23 +25,24 @@ namespace Helpers.Extensions
                                                                          }.Concat(c)));
         }
 
-        public static IEnumerable<IEnumerable<T>> Permutations<T>(this IEnumerable<T> list,
+        public static IEnumerable<List<T>> Permutations<T>(this IEnumerable<T> list,
                                                                   int length)
         {
             if (length == 1)
-                return list.Select(t => new T[]
-                                        {
-                                            t
-                                        });
+            {
+                return list.Select(t => new[]
+                {
+                    t
+                }.ToList());
+            }
 
             return Permutations(list,
                                 length - 1)
                 .SelectMany(t => list.Where(e => !t.Contains(e)),
                             (t1,
-                             t2) => t1.Concat(new[]
-                                              {
-                                                  t2
-                                              }));
+                             t2) => t1.Concat([
+                                t2
+                            ]).ToList());
         }
 
         public static IEnumerable<IEnumerable<T>> Permute<T>(this IEnumerable<T> sequence)

@@ -44,21 +44,21 @@ namespace Helpers.Extensions
             }
         }
 
-        public static Coordinate Move(this Coordinate startCoordinate, Direction direction)
+        public static Coordinate Move(this Coordinate startCoordinate, Direction direction, int distance = 1)
         {
             var startX = startCoordinate.X;
             var startY = startCoordinate.Y;
 
             return direction switch
             {
-                Direction.West => new Coordinate(startX - 1, startY),
-                Direction.East => new Coordinate(startX + 1, startY),
-                Direction.South => new Coordinate(startX, startY - 1),
-                Direction.North => new Coordinate(startX, startY + 1),
-                Direction.SouthWest => new Coordinate(startX - 1, startY - 1),
-                Direction.NorthWest => new Coordinate(startX - 1, startY + 1),
-                Direction.SouthEast => new Coordinate(startX + 1, startY - 1),
-                Direction.NorthEast => new Coordinate(startX + 1, startY + 1),
+                Direction.West => new Coordinate(startX - distance, startY),
+                Direction.East => new Coordinate(startX + distance, startY),
+                Direction.South => new Coordinate(startX, startY - distance),
+                Direction.North => new Coordinate(startX, startY + distance),
+                Direction.SouthWest => new Coordinate(startX - distance, startY - distance),
+                Direction.NorthWest => new Coordinate(startX - distance, startY + distance),
+                Direction.SouthEast => new Coordinate(startX + distance, startY - distance),
+                Direction.NorthEast => new Coordinate(startX + distance, startY + distance),
                 _ => throw new ArgumentException("Direction was not valid", nameof(direction))
             };
         }
