@@ -85,7 +85,7 @@ namespace PuzzleDays
                     break;
                 }
 
-                CalculateWireState(unknownWire, wireStates, this.InitialState.Gates);
+                CalculateWireState(unknownWire, wireStates, this.InitialState.Gates, false, []);
             }
 
             var zWireNumber = GetValueForWireLetter(wireStates, 'z');
@@ -102,7 +102,7 @@ namespace PuzzleDays
             return zWireNumber;
         }
 
-        private static int CalculateWireState(string targetWire, Dictionary<string, int?> wireStates, Dictionary<string, GateDefinition> gates)
+        private static int CalculateWireState(string targetWire, Dictionary<string, int?> wireStates, Dictionary<string, GateDefinition> gates, bool log, HashSet<string> logged)
         {
             if (wireStates.TryGetValue(targetWire, out var state) && state.HasValue)
             {
@@ -112,10 +112,13 @@ namespace PuzzleDays
 
             var gateDefinitionForWire = gates[targetWire];
 
-            Console.WriteLine($"{targetWire} relies on {gateDefinitionForWire.WireOne} {gateDefinitionForWire.Type} {gateDefinitionForWire.WireTwo}");
+            if (log && logged.Add(targetWire))
+            {
+                Console.WriteLine($"{targetWire} relies on {gateDefinitionForWire.WireOne} {gateDefinitionForWire.Type} {gateDefinitionForWire.WireTwo}");
+            }
 
-            var inputOneState = CalculateWireState(gateDefinitionForWire.WireOne, wireStates, gates);
-            var inputTwoState = CalculateWireState(gateDefinitionForWire.WireTwo, wireStates, gates);
+            var inputOneState = CalculateWireState(gateDefinitionForWire.WireOne, wireStates, gates, log, logged);
+            var inputTwoState = CalculateWireState(gateDefinitionForWire.WireTwo, wireStates, gates, log, logged);
 
             var wireState = gateDefinitionForWire.Type switch
             {
@@ -132,6 +135,8 @@ namespace PuzzleDays
 
         protected override async Task<string> ExecutePuzzlePartTwo()
         {
+            Console.Clear();
+
             var wireStates = new Dictionary<string, int?>();
 
             foreach(var startingState in InitialState.InitialWires)
@@ -144,74 +149,65 @@ namespace PuzzleDays
                 wireStates[gate.Key] = null;
             }
 
-            var xValue = GetValueForWireLetter(wireStates, 'x');
-            var yValue = GetValueForWireLetter(wireStates, 'y');
-
-            var expectedValue = xValue + yValue;
-            
-            var partOneResult = 58367545758258;
-
-            var currentString = Convert.ToString(partOneResult, 2);
-            var expectedString = Convert.ToString(expectedValue, 2);
-
-            var incorrectIndices = new List<int>();
-
-            for(var i = 0; i < expectedString.Length; i++)
+            var swapPairs = new[]
             {
-                if (currentString[i] != expectedString[i])
+                ("z05", "bpf"),
+                ("z11", "hcc"),
+                ("qcw", "hqc"),
+                ("fdw", "z35")
+            };
+
+            foreach (var (gateOne, gateTwo) in swapPairs)
+            {
+                var temp = InitialState.Gates[gateOne];
+                InitialState.Gates[gateOne] = InitialState.Gates[gateTwo] with { OutputWire = gateOne };
+                InitialState.Gates[gateTwo] = temp with { OutputWire = gateTwo };
+            }
+
+            var logged = new HashSet<string>();
+
+            // Check direct addition of a single index
+            // For each binary digit of our 44 bit inputs
+            for (var i = 0; i < 45; i++)
+            {
+                // Try all combinations of X and Y
+                foreach (var (x, y, expected) in new [] {(0, 0, 0), (0, 1, 1), (1, 0, 1), (1, 1, 0)})
                 {
-                    incorrectIndices.Add(i);
+                    // Create the wireState dictionary with all inputs as 0
+                    var zeroWireState = wireStates.ToDictionary(x => x.Key, x => x.Key.StartsWith('x') || x.Key.StartsWith('y') ? 0 : x.Value);
+
+                    // Set just our current index
+                    zeroWireState[$"x{i:0#}"] = x;
+                    zeroWireState[$"y{i:0#}"] = y;
+
+                    var log = x == 0 && y == 0;
+
+                    if (log)
+                    {
+                        Console.WriteLine("---------------------------------");
+                    }
+
+                    // Check if the z at the index matches our expected result
+                    CalculateWireState($"z{i:0#}", zeroWireState, InitialState.Gates, x == 0 && y == 0, logged);
+
+                    var resultState = zeroWireState[$"z{i:0#}"];
+
+                    // If it doesn't we can start inspecting the console output
+                    // We will have logged what z_i relies upon including any new gates we've seen for the first time (to cut down the logs)
+                    // Generally we're expected x_i XOR y_i combined with some other gates that bring in the carry (like 4-5 new ones)
+                    // And the z gate should be the XOR of the matching X & Y gates with the carry
+                    if (resultState != expected)
+                    {
+                        Console.WriteLine($"For index {i} X: {x} Y: {y} expected {expected} but got {resultState}");
+                    }
                 }
             }
 
-            //var gatesToTrySwap = new HashSet<GateDefinition>();
+            var allWireSwapNames = string.Join(",",
+                                               swapPairs.SelectMany(x => new [] {x.Item1, x.Item2})
+                                                   .OrderBy(x => x));
 
-            //foreach(var index in  incorrectIndices)
-            //{
-            //    var zGate = InitialState.Gates[$"z{index:0#}"];
-
-            //    var gateQueue = new Queue<GateDefinition>();
-            //    gateQueue.Enqueue(zGate);
-
-            //    while(gateQueue.Count > 0)
-            //    {
-            //        var nextGate = gateQueue.Dequeue();
-
-            //        gatesToTrySwap.Add(nextGate);
-
-            //        if (InitialState.Gates.TryGetValue(nextGate.WireOne, out var leftSide))
-            //        {
-            //            gateQueue.Enqueue(leftSide);
-            //        }
-
-            //        if (InitialState.Gates.TryGetValue(nextGate.WireTwo, out var rightSide))
-            //        {
-            //            gateQueue.Enqueue(rightSide);
-            //        }
-            //    }               
-            //}
-
-            var wireStateCopy = wireStates.ToDictionary(x => x.Key, x => x.Value);
-
-            for(var i = 0; i <= 45; i++)
-            {
-                CalculateWireState($"z{i:0#}", wireStates, InitialState.Gates);
-            }
-
-            SetXAndY(1, 1, wireStateCopy);
-            var result = CalculateZ(wireStateCopy);
-            
-
-            return "Not Yet";
-        }
-
-        private void SetXAndY(int xIndex, int yIndex, Dictionary<string, int?> wireState)
-        {
-            for(var i = 0; i < 45; i++)
-            {
-                wireState[$"x{i:0#}"] = i == xIndex ? 1 : 0;
-                wireState[$"y{i:0#}"] = i == yIndex ? 1 : 0;
-            }
+            return allWireSwapNames;
         }
 
         public record GateDefinition(string WireOne, string WireTwo, string OutputWire, GateType Type);
