@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/UI/">
+    <Project Path="AoCRunner/AoCRunner.csproj" />
+  </Folder>
+</Solution>
