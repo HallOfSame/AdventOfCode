@@ -1,0 +1,14 @@
+- Example input allows expected response
+- Button to view stored inputs
+- Calendar-ish view for pick & run puzzles?
+- Memory & time tracking puzzle runs?
+
+TODO:
+- Load input
+	- Not sure if I wanna keep w/ sqlite or not, probably easiest to re-use
+- Basic runner
+	- Choose input, select run, see output
+- Visualization
+	- Allow 2D grids
+
+Not sure how much I want to re-use from last year. Some was good, some was bad.

@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Ideas.txt" />
+  </Folder>
   <Folder Name="/UI/">
     <Project Path="AoCRunner/AoCRunner.csproj" />
   </Folder>
