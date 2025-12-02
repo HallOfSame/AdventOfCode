@@ -46,9 +46,55 @@ public class Day01 : SingleExecutionPuzzle<Day01.State>
         return Task.FromResult(answer.ToString());
     }
 
-    protected override async Task<string> ExecutePuzzlePartTwo()
+    protected override Task<string> ExecutePuzzlePartTwo()
     {
-        throw new NotImplementedException();
+        var answer = 0;
+
+        foreach (var instruction in InitialState.Instructions)
+        {
+            // Track full spins for later
+            var length = instruction.Length % 100;
+            var fullSpins = instruction.Length / 100;
+
+            var change = instruction.Direction switch
+            {
+                SpinDirection.Right => length,
+                SpinDirection.Left => length * -1,
+                _ => throw new InvalidOperationException("Invalid direction")
+            };
+
+            var wasAtZero = InitialState.Location == 0;
+            var newPosition = InitialState.Location + change;
+            var passedZero = false;
+
+
+            switch (newPosition)
+            {
+                // Handle turning left past 0 but subtracting (newPosition is negative here) from 100
+                case < 0:
+                    newPosition = 100 + newPosition;
+                    passedZero = true;
+                    break;
+                // Mod 100 if we turned right from 99
+                case > 99:
+                    passedZero = true;
+                    newPosition %= 100;
+                    break;
+            }
+
+            // If we landed on zero or went past it
+            if (newPosition == 0 || (passedZero && !wasAtZero))
+            {
+                answer++;
+            }
+
+            // Fully rotating is always going to pass 0
+            answer += fullSpins;
+
+            InitialState.Location = newPosition;
+        }
+
+        return Task.FromResult(answer.ToString());
     }
 
     protected override Task<State> LoadInputState(string puzzleInput, PuzzleInputType inputType)
