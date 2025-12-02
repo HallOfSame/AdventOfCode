@@ -15,6 +15,15 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    <StackPanel>
+        <TextBox Height="300" 
+                 Watermark="Input" 
+                 UseFloatingWatermark="True"
+                 AcceptsReturn="True"
+                 Text="{Binding Input}" />
+        <TextBlock Text="{Binding Result}" />
+        <Button Command="{Binding RunPartOne}">Run Part One</Button>
+        <Button Command="{Binding RunPartTwo}">Run Part Two</Button>
+    </StackPanel>
 
 </Window>
