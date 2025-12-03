@@ -3,49 +3,12 @@
         xmlns:vm="using:AoCRunner.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:models="clr-namespace:AoCRunner.Models"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="AoCRunner.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/star-icon.ico"
         Title="AoCRunner">
-	<DockPanel>
-        <TextBlock HorizontalAlignment="Center" 
-                   DockPanel.Dock="Top">
-            Advent of Code 2025
-        </TextBlock>
-        <Border BorderThickness="1"
-                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
-                Margin="50">
-            <ItemsControl ItemsSource="{Binding PuzzleInfos}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <Grid ColumnDefinitions="*,*,*,*,*,*,*" 
-                              RowDefinitions="*,*,*,*,*" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemContainerTheme>
-                    <ControlTheme TargetType="ContentPresenter">
-                        <Setter Property="Grid.Row" Value="{Binding DataType=models:PuzzleInfoUiModel, Path=GridRow}"/>
-                        <Setter Property="Grid.Column" Value="{Binding DataType=models:PuzzleInfoUiModel, Path=GridColumn}"/>
-                    </ControlTheme>
-                </ItemsControl.ItemContainerTheme>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border BorderThickness="1"
-                                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
-                            <Grid>
-                                <TextBlock HorizontalAlignment="Left"
-                                           VerticalAlignment="Top"
-                                           Text="{Binding DayNumber}" />
-                                <TextBlock VerticalAlignment="Center"
-                                           HorizontalAlignment="Center"
-                                           Text="{Binding PuzzleName}" />
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Border>
-    </DockPanel>
+    <Grid>
+		<ContentControl Content="{Binding CurrentPageViewModel}" />
+    </Grid>
 </Window>

@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="clr-namespace:AoCRunner.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="AoCRunner.Views.SingleExecutionPuzzleView"
+             x:DataType="viewModels:SingleExecutionPuzzleViewModel">
+    <StackPanel>
+        <TextBox Height="300" 
+                 Watermark="Input" 
+                 UseFloatingWatermark="True"
+                 AcceptsReturn="True"
+                 Text="{Binding Input}" />
+        <TextBlock Text="{Binding Result}" />
+        <Button Command="{Binding RunPartOne}">Run Part One</Button>
+        <Button Command="{Binding RunPartTwo}">Run Part Two</Button>
+    </StackPanel>
+</UserControl>

@@ -29,4 +29,10 @@
   <ItemGroup>
     <ProjectReference Include="..\PuzzleDays\PuzzleDays.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\SingleExecutionPuzzleView.axaml.cs">
+      <DependentUpon>SingleExecutionPuzzleView.axaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
 </Project>
