@@ -1,5 +1,9 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using AoCRunner.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Helpers.Interfaces;
 using InputStorageDatabase;
 using PuzzleDays;
 
@@ -7,6 +11,36 @@ namespace AoCRunner.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
+    public MainWindowViewModel(IEnumerable<IPuzzle> puzzles)
+    {
+        var puzzleDictionary = puzzles.ToDictionary(x => x.Info.Day, x => x.Info.Name);
+        var currentRow = 0;
+        var currentColumn = 1;
+
+        PuzzleInfos = Enumerable.Range(1, 31).Select(x =>
+            {
+                var newPuzzle = new PuzzleInfoUiModel
+                {
+                    PuzzleName = puzzleDictionary.GetValueOrDefault(x, string.Empty),
+                    DayNumber = x,
+                    GridRow = currentRow,
+                    GridColumn = currentColumn
+                };
+
+                currentColumn++;
+
+                if (currentColumn >= 7)
+                {
+                    currentRow++;
+                    currentColumn = 0;
+                }
+
+                return newPuzzle;
+            })
+            .ToList();
+    }
+
+    public List<PuzzleInfoUiModel> PuzzleInfos { get; }
     public string Input { get; set; } = string.Empty;
 
     [ObservableProperty]

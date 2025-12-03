@@ -6,6 +6,7 @@ using Avalonia.Markup.Xaml;
 using AoCRunner.ViewModels;
 using AoCRunner.Views;
 using Microsoft.Extensions.DependencyInjection;
+using PuzzleDays;
 
 namespace AoCRunner;
 
@@ -20,6 +21,7 @@ public class App : Application
     {
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddServices();
+        serviceCollection.AddPuzzles();
         var provider = serviceCollection.BuildServiceProvider();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
