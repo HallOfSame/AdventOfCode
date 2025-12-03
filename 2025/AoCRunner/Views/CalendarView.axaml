@@ -41,7 +41,8 @@
                                         Command="{Binding #CalendarViewControl.((vm:CalendarViewModel)DataContext).SelectPuzzle}"
                                         CommandParameter="{Binding DayNumber}"
                                         HorizontalAlignment="Center"
-                                        VerticalAlignment="Center" />
+                                        VerticalAlignment="Center"
+                                        IsVisible="{Binding PuzzleName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                             </Grid>
                         </Border>
                     </DataTemplate>
