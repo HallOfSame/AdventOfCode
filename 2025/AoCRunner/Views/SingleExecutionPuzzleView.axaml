@@ -6,18 +6,18 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="AoCRunner.Views.SingleExecutionPuzzleView"
              x:DataType="viewModels:SingleExecutionPuzzleViewModel">
-    <DockPanel>
+    <DockPanel LastChildFill="True">
         <TextBlock DockPanel.Dock="Top"
                    Text="{Binding Title}" />
-        <TextBox DockPanel.Dock="Right"
-                 Watermark="Input" 
-                 AcceptsReturn="True"
-                 Text="{Binding Input}" />
         <StackPanel DockPanel.Dock="Left">
             <Button Command="{Binding RunPartOne}">Run Part One</Button>
             <Button Command="{Binding RunPartTwo}">Run Part Two</Button>
             <Label>Execution Results:</Label>
             <TextBlock Text="{Binding Result}" />
         </StackPanel>
+        <TextBox Watermark="Input" 
+                 AcceptsReturn="True"
+                 DockPanel.Dock="Right"
+                 Text="{Binding Input}" />
     </DockPanel>
 </UserControl>
