@@ -38,8 +38,8 @@
                         <ItemsControl ItemsSource="{Binding Progress}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Text}"
-                                               Foreground="{Binding Type, Converter={StaticResource MessageTypeToBrushConverter}}"/>
+                                    <SelectableTextBlock Text="{Binding Text}"
+                                                         Foreground="{Binding Type, Converter={StaticResource MessageTypeToBrushConverter}}"/>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
