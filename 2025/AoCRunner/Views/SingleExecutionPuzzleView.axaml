@@ -8,6 +8,10 @@
              x:DataType="viewModels:SingleExecutionPuzzleViewModel">
     <DockPanel>
         <TextBlock DockPanel.Dock="Top"
+                   HorizontalAlignment="Center"
+                   FontSize="18"
+                   FontWeight="Bold"
+                   Margin="0 10"
                    Text="{Binding Title}" />
         <Grid ColumnDefinitions="*, 2*" 
               RowDefinitions="*"
