@@ -1,19 +1,19 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.Text;
-using CommunityToolkit.Mvvm.ComponentModel;
 using Helpers.Interfaces;
 using InputStorageDatabase;
 using System.Threading.Tasks;
+using AoCRunner.Models;
 
 namespace AoCRunner.ViewModels;
 
-public partial class SingleExecutionPuzzleViewModel(ISingleExecutionPuzzle puzzle) : ViewModelBase
+public class SingleExecutionPuzzleViewModel(ISingleExecutionPuzzle puzzle) : ViewModelBase
 {
     public string Title => $"Day {puzzle.Info.Day} - {puzzle.Info.Name}";
     public string Input { get; set; } = string.Empty;
 
-    [ObservableProperty]
-    private string result = string.Empty;
+    public ObservableCollection<ProgressText> Progress { get; } = [];
 
     public async Task RunPartOne()
     {
@@ -50,24 +50,47 @@ public partial class SingleExecutionPuzzleViewModel(ISingleExecutionPuzzle puzzl
             resultText.Append($"Calculated result {executionResult.Result}");
         }
 
-        // TODO eventually show this on its own property
         resultText.Append($" in {executionResult.ElapsedTime}");
 
-        Result = resultText.ToString();
+        AddProgressText(resultText.ToString());
     }
 
     private async Task<bool> TryCatchInputLoad()
     {
+        ClearProgress();
+
         try
         {
+            AddProgressText("Loading puzzle input...");
             await puzzle.LoadInput(Input, PuzzleInputType.Example);
+            AddProgressText("Input loaded...");
         }
         catch (Exception ex)
         {
-            Result = $"Failed to load input: {ex}";
+            AddProgressText($"Failed to load input: {ex}", MessageType.Error);
             return false;
         }
 
         return true;
     }
+
+    private void AddProgressText(string text, MessageType type = MessageType.Normal)
+    {
+        Progress.Add(new ProgressText
+        {
+            Text = text,
+            Type = type
+        });
+    }
+
+    private void ClearProgress()
+    {
+        Progress.Clear();
+    }
+}
+
+public class ProgressText
+{
+    public required string Text { get; init; }
+    public required MessageType Type { get; init; }
 }

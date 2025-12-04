@@ -2,12 +2,31 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="AoCRunner.App"
              xmlns:local="using:AoCRunner"
+             xmlns:converters="clr-namespace:AoCRunner.Converters"
              RequestedThemeVariant="Default">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
     <Application.DataTemplates>
         <local:ViewLocator/>
     </Application.DataTemplates>
+
+     <Application.Resources>
+         <ResourceDictionary>
+             <converters:MessageTypeToBrushConverter x:Key="MessageTypeToBrushConverter"/>
+             <ResourceDictionary.ThemeDictionaries>
+                 <ResourceDictionary x:Key='Light'>
+                     <SolidColorBrush x:Key='ErrorBrush'>#D60000</SolidColorBrush>
+                     <SolidColorBrush x:Key='WarningBrush'>#EAAA00</SolidColorBrush>
+                     <SolidColorBrush x:Key='TextBrush'>Black</SolidColorBrush>
+                 </ResourceDictionary>
+                 <ResourceDictionary x:Key='Dark'>
+                     <SolidColorBrush x:Key='ErrorBrush'>#FF6B6B</SolidColorBrush>
+                     <SolidColorBrush x:Key='WarningBrush'>#FFD75E</SolidColorBrush>
+                     <SolidColorBrush x:Key='TextBrush'>White</SolidColorBrush>
+                 </ResourceDictionary>
+             </ResourceDictionary.ThemeDictionaries>
+         </ResourceDictionary>
+     </Application.Resources>
   
     <Application.Styles>
         <FluentTheme />
