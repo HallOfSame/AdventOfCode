@@ -4,12 +4,23 @@ using System.Text;
 using Helpers.Interfaces;
 using InputStorageDatabase;
 using System.Threading.Tasks;
-using AoCRunner.Models;
+using Helpers.Logging;
 
 namespace AoCRunner.ViewModels;
 
-public class SingleExecutionPuzzleViewModel(ISingleExecutionPuzzle puzzle) : ViewModelBase
+public sealed class SingleExecutionPuzzleViewModel : ViewModelBase, IDisposable
 {
+    private readonly ISingleExecutionPuzzle puzzle;
+    private readonly ProgressLogger logger;
+
+    public SingleExecutionPuzzleViewModel(ISingleExecutionPuzzle puzzle, ProgressLogger logger)
+    {
+        this.puzzle = puzzle;
+        this.logger = logger;
+
+        logger.OnProgress += OnProgress;
+    }
+
     public string Title => $"Day {puzzle.Info.Day} - {puzzle.Info.Name}";
     public string Input { get; set; } = string.Empty;
 
@@ -86,6 +97,20 @@ public class SingleExecutionPuzzleViewModel(ISingleExecutionPuzzle puzzle) : Vie
     private void ClearProgress()
     {
         Progress.Clear();
+    }
+
+    private void OnProgress(object? sender, (string message, MessageType type) info)
+    {
+        Progress.Add(new ProgressText
+        {
+            Text = info.message,
+            Type = info.type
+        });
+    }
+
+    public void Dispose()
+    {
+        logger.OnProgress -= OnProgress;
     }
 }
 

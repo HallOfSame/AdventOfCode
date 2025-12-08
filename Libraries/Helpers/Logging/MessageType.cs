@@ -1,4 +1,4 @@
-﻿namespace AoCRunner.Models;
+﻿namespace Helpers.Logging;
 
 public enum MessageType
 {

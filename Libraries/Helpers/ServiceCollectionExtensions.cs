@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Helpers.Interfaces;
+using Helpers.Logging;
 using Helpers.Structure;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +16,7 @@ namespace Helpers
         public static IServiceCollection AddPuzzleStructure(this IServiceCollection services)
         {
             services.AddSingleton<IPuzzleContainer, PuzzleContainer>();
+            services.AddSingleton<ProgressLogger>();
 
             return services;
         }

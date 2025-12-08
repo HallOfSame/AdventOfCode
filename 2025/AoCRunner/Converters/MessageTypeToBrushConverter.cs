@@ -4,6 +4,7 @@ using AoCRunner.Models;
 using Avalonia;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
+using Helpers.Logging;
 
 namespace AoCRunner.Converters;
 

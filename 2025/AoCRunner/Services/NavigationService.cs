@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using AoCRunner.ViewModels;
 using Helpers.Interfaces;
+using Helpers.Logging;
 
 namespace AoCRunner.Services;
 
-public class NavigationService(IEnumerable<IPuzzle> puzzles)
+public class NavigationService(IEnumerable<IPuzzle> puzzles, ProgressLogger progress)
 {
     public event EventHandler<NavigationEventArgs>? OnNavigation;
 
@@ -23,7 +24,7 @@ public class NavigationService(IEnumerable<IPuzzle> puzzles)
         var puzzle = puzzles.First(x => x.Info.Day == day);
 
         // TODO handle other types
-        var viewModel = new SingleExecutionPuzzleViewModel((ISingleExecutionPuzzle)puzzle);
+        var viewModel = new SingleExecutionPuzzleViewModel((ISingleExecutionPuzzle)puzzle, progress);
 
         OnNavigation?.Invoke(this, new NavigationEventArgs
         {

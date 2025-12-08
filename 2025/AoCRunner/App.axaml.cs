@@ -22,6 +22,7 @@ public class App : Application
     {
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddServices();
+        serviceCollection.AddPuzzleStructure();
         serviceCollection.AddPuzzlesFromAssembly(typeof(Day01).Assembly);
         var provider = serviceCollection.BuildServiceProvider();
 
