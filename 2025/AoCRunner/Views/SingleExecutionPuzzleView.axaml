@@ -34,7 +34,8 @@
                         BorderThickness="1"
                         BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" 
-                                  HorizontalScrollBarVisibility="Auto">
+                                  HorizontalScrollBarVisibility="Auto"
+                                  AllowAutoHide="False">
                         <ItemsControl ItemsSource="{Binding Progress}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
