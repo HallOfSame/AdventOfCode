@@ -22,7 +22,7 @@
                      Margin="20 0 0 0"
                      Text="{Binding Input}" />
             <Grid Grid.Column="0"
-                  RowDefinitions="Auto, Auto, *">
+                  RowDefinitions="Auto, Auto, *, Auto">
                 <StackPanel Grid.Row="0"
                             Spacing="10"
                             Orientation="Horizontal">
@@ -46,6 +46,8 @@
                         </ItemsControl>
                     </ScrollViewer>
                 </Border>
+                <Button Grid.Row="3"
+                        Command="{Binding Visualize}">Visualize</Button>
             </Grid>
         </Grid>
     </DockPanel>

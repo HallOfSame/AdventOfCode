@@ -5,6 +5,7 @@ using Helpers.Interfaces;
 using InputStorageDatabase;
 using System.Threading.Tasks;
 using Helpers.Logging;
+using AoCRunner.Views;
 
 namespace AoCRunner.ViewModels;
 
@@ -46,6 +47,21 @@ public sealed class SingleExecutionPuzzleViewModel : ViewModelBase, IDisposable
 
         var executionResult = await puzzle.ExecutePartTwo();
         SetResultText(executionResult);
+    }
+
+    public void Visualize()
+    {
+        if (puzzle is not IVisualize2d visualizablePuzzle)
+        {
+            return;
+        }
+
+        var visualize = new VisualizeWindow
+        {
+            DataContext = new VisualizeViewModel(visualizablePuzzle.GetCoordinates())
+        };
+
+        visualize.Show();
     }
 
     private void SetResultText(ExecutionResult executionResult)

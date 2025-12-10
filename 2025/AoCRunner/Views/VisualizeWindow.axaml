@@ -1,0 +1,32 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:AoCRunner.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="AoCRunner.Views.VisualizeWindow"
+        x:DataType="vm:VisualizeViewModel"
+        Title="VisualizeWindow">
+    <Grid Background="Blue">
+          <ItemsControl ItemsSource="{Binding CoordinatesToDraw}"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Background="Green">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Canvas HorizontalAlignment="Stretch"
+                            Background="Red"
+                            VerticalAlignment="Stretch" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                      <TextBlock Canvas.Left="{Binding X}" 
+                                 Canvas.Top="{Binding Y}"
+                                 Text="{Binding Text}"
+                                 Foreground="{Binding Color}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+          </ItemsControl>
+    </Grid>
+</Window>
