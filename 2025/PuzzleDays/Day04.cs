@@ -8,6 +8,7 @@ using InputStorageDatabase;
 
 namespace PuzzleDays;
 
+// TODO make a step execution from this
 public class Day04 : SingleExecutionPuzzle<Day04.State>, IVisualize2d
 {
     public override PuzzleInfo Info => new(2025, 4, "Printing Department");
