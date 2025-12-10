@@ -34,7 +34,24 @@ public class Day04 : SingleExecutionPuzzle<Day04.State>, IVisualize2d
 
     protected override async Task<string> ExecutePuzzlePartTwo()
     {
-        throw new NotImplementedException();
+        var removedCount = 0;
+
+        while(true)
+        {
+            var toRemove = InitialState.Grid
+            .Where(x => x.Value == '@' && x.Key.GetNeighbors(true).Count(n => InitialState.Grid.TryGetValue(n, out var nChar) && nChar == '@') < 4).ToList();
+
+            if (toRemove.Count == 0)
+            {
+                break;
+            }
+
+            removedCount += toRemove.Count;
+
+            toRemove.ForEach(x => InitialState.Grid[x.Key] = '.');
+        }
+
+        return removedCount.ToString();
     }
 
     protected override async Task<State> LoadInputState(string puzzleInput, PuzzleInputType inputType)
