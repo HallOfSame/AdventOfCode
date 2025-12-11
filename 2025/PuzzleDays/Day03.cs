@@ -1,6 +1,5 @@
 ﻿using Helpers.Logging;
 using Helpers.Structure;
-using InputStorageDatabase;
 
 namespace PuzzleDays;
 

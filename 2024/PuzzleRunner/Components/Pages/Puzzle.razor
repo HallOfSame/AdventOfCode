@@ -1,7 +1,6 @@
 ﻿@page "/puzzle/{Year:int}/{Day:int}"
 @using Helpers.Interfaces
-@using InputStorageDatabase
-@using InputStorageDatabase.Extensions
+@using Helpers.Structure
 @using PuzzleRunner.Components.Shared
 <MudPaper Class="pa-16 ma-2">
     <MudCard>
@@ -9,34 +8,32 @@
             <MudText Typo="Typo.h5">@puzzle.Info.Name</MudText>
             <MudText Typo="Typo.body2">@puzzle.Info.Year Day @puzzle.Info.Day</MudText>
             <MudLink Typo="Typo.body2" Target="_blank" Href="@($"https://adventofcode.com/{puzzle.Info.Year}/day/{puzzle.Info.Day}")">AoC Link</MudLink>
-            <MudSelect Style="max-width: 250px;" T="PuzzleInput" Value="puzzleInput" ValueChanged="val => OnInputChanged(val)" HelperText="Select Input">
-                @foreach (var input in availableInputs)
-                {
-                    <MudSelectItem @key="input.InputId" Value="input">
-                        @input.Name (@input.InputType)
-                    </MudSelectItem>
-                }
-            </MudSelect>
         </MudCardContent>
         <MudCardActions>
-            <MudButton OnClick="LoadSelectedInput" Disabled="puzzleInput == null" Variant="Variant.Text" Color="Color.Primary">Initialize</MudButton>
-            <MudButton OnClick="OpenInputUploader" Variant="Variant.Text" Color="Color.Primary">Create Input</MudButton>
             <MudButton OnClick="LoadInputFromSite" Variant="Variant.Text" Color="Color.Primary">Load from AoC</MudButton>
         </MudCardActions>
     </MudCard>
+    <MudExpansionPanels>
+        <MudExpansionPanel Text="Input">
+            <div class="d-flex">
+                <MudRadioGroup T="PuzzleInputType" @bind-Value="inputType">
+                    <MudRadio Value="@PuzzleInputType.Example">Example</MudRadio>
+                    <MudRadio Value="@PuzzleInputType.Personal">Personal</MudRadio>
+                </MudRadioGroup>
+            </div>
+            <MudTextField T="string" Label="Input" Required @bind-Value="puzzleInput" Lines="10" AutoGrow />
+        </MudExpansionPanel>
+    </MudExpansionPanels>
     <br />
-    @if (readyToExecute)
+    @if (puzzleInput is not null)
     {
         <PuzzleExecution Puzzle="puzzle" />
     }
 </MudPaper>
 
 @inject IPuzzleContainer PuzzleContainer
-@inject IDialogService DialogService
-@inject AdventOfCodeContext AdventOfCodeContext
 @inject IAoCHttpClient HttpClient
-@inject AdventOfCodeContext DbContext
-@code {
+    @code {
 
     [Parameter]
     public int Year { get; set; }
@@ -45,72 +42,19 @@
     public int Day { get; set; }
 
     private IPuzzle puzzle = null!;
-    private List<PuzzleInput> availableInputs = [];
-    private PuzzleInput? puzzleInput;
-    private bool readyToExecute;
+    private string? puzzleInput;
+    private PuzzleInputType inputType;
 
     protected override void OnInitialized()
     {
         puzzle = PuzzleContainer.GetPuzzle(Year, Day);
-        availableInputs = AdventOfCodeContext.GetInputsForDay(Year, Day)
-            .ToList();
         base.OnInitialized();
-    }
-
-    private async Task OpenInputUploader()
-    {
-        var parameters = new DialogParameters<InputUploader>
-        {
-            { x => x.Year, puzzle.Info.Year },
-            { x => x.Day, puzzle.Info.Day },
-        };
-        var options = new DialogOptions { CloseOnEscapeKey = false };
-
-        var dialog = await DialogService.ShowAsync<InputUploader>("Upload Input", parameters, options);
-
-        var result = await dialog.Result;
-
-        if (result?.Data is int newInputId)
-        {
-            availableInputs.Add(AdventOfCodeContext.PuzzleInputs.Single(x => x.InputId == newInputId));
-        }
-    }
-
-    private async Task LoadSelectedInput()
-    {
-        await puzzle.LoadInput(puzzleInput!.Input, puzzleInput!.InputType);
-
-        readyToExecute = true;
-    }
-
-    private void OnInputChanged(PuzzleInput? newValue)
-    {
-        readyToExecute = false;
-        puzzleInput = newValue;
     }
 
     private async Task LoadInputFromSite()
     {
-        if (availableInputs.Any(x => x.InputType == PuzzleInputType.Personal))
-        {
-            return;
-        }
-        
         var inputData = await HttpClient.GetInput(puzzle.Info.Year, puzzle.Info.Day);
-
-        var newInput = new PuzzleInput
-            {
-                Name = "Real Input",
-                Day = puzzle.Info.Day,
-                Year = puzzle.Info.Year,
-                Input = inputData,
-                InputType = PuzzleInputType.Personal
-            };
-
-        await DbContext.PuzzleInputs.AddAsync(newInput);
-        await DbContext.SaveChangesAsync();
-
-        availableInputs.Add(newInput);
-        OnInputChanged(newInput);
+        puzzleInput = inputData;
+        inputType = PuzzleInputType.Personal;
     }
 }

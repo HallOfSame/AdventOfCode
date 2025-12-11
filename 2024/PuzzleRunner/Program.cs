@@ -1,6 +1,5 @@
 using System.Net;
 using Helpers;
-using InputStorageDatabase;
 using Microsoft.Extensions.Options;
 using MudBlazor.Services;
 using PuzzleDays;
@@ -19,9 +18,8 @@ builder.Services.Configure<AoCSettings>(builder.Configuration);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices();
-builder.Services.AddDatabase();
 builder.Services.AddPuzzleStructure();
-builder.Services.Add2024Puzzles();
+builder.Services.AddPuzzlesFromAssembly(typeof(Day01).Assembly);
 builder.Services.AddLogging(logging => logging.AddConsole());
 builder.Services
     .AddHttpClient<IAoCHttpClient, AoCHttpClient>(client =>
@@ -54,11 +52,5 @@ app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
-using(var scope = app.Services.CreateScope())
-using (var context = scope.ServiceProvider.GetRequiredService<AdventOfCodeContext>())
-{
-    context.Database.EnsureCreated();
-}
 
 app.Run();

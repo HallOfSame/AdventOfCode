@@ -1,37 +1,57 @@
 ﻿@using Helpers.Structure
 @using Helpers.Interfaces
+@using Heron.MudCalendar
 
-<MudDataGrid T="PuzzleInfo" Items="@puzzles" Style="height: 100%; overflow-x: auto;">
-    <Columns>
-        <PropertyColumn Property="x => x.Year" />
-        <PropertyColumn Property="x => x.Day" />
-        <PropertyColumn Property="x => x.Name" />
-        <TemplateColumn CellClass="d-flex justify-end">
-            <CellTemplate>
-                <MudStack Row>
-                    <MudButton OnClick="() => GoToPuzzle(context.Item)" Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Primary">Open</MudButton>
-                </MudStack>
-            </CellTemplate>
-        </TemplateColumn>
-    </Columns>
-</MudDataGrid>
+<MudCalendar T="PuzzleCalendarItem"
+             Items="puzzles"
+             ItemClicked="ItemClicked"
+             CurrentDay="new DateTime(2025, 12, 1)"
+             ShowToolbar="@false">
+    <CellTemplate>
+        <div style="width: 85%; height: 100%; border: 2px solid var(--mud-palette-primary); margin: 0 auto;">
+            <div style="background-color: var(--mud-palette-primary);">
+                <MudText Style="color: #ffffff;" Typo="Typo.body1" Align="Align.Center">@(context.PuzzleInfo.Name)</MudText>
+            </div>
+        </div>
+    </CellTemplate>
+</MudCalendar>
 
 @inject IEnumerable<IPuzzle> Puzzles
 @inject NavigationManager NavigationManager
 @code {
-    private PuzzleInfo[] puzzles = [];
+    private PuzzleCalendarItem[] puzzles = [];
 
     protected override void OnInitialized()
     {
-        puzzles = Puzzles.Select(x => x.Info)
-            .OrderByDescending(x => x.Year)
-            .ThenByDescending(x => x.Day)
+        puzzles = Puzzles.Select(x =>
+            {
+                var date = new DateTime(x.Info.Year, 12, x.Info.Day);
+
+                return new PuzzleCalendarItem
+                {
+                    PuzzleInfo = x.Info,
+                    Start = date,
+                    End = date.AddDays(1).AddTicks(-1),
+                    AllDay = true,
+                    Text = x.Info.Name
+                };
+            })
             .ToArray();
         base.OnInitialized();
+    }
+
+    private void ItemClicked(PuzzleCalendarItem item)
+    {
+        GoToPuzzle(item.PuzzleInfo);
     }
 
     private void GoToPuzzle(PuzzleInfo puzzle)
     {
         NavigationManager.NavigateTo($"puzzle/{puzzle.Year}/{puzzle.Day}");
+    }
+
+    class PuzzleCalendarItem : CalendarItem
+    {
+        public required PuzzleInfo PuzzleInfo { get; init; }
     }
 }

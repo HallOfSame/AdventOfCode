@@ -2,8 +2,7 @@
   <Folder Name="/Solution Items/">
     <File Path="Ideas.txt" />
   </Folder>
-  <Project Path="../InputStorageDatabase/InputStorageDatabase.csproj" />
+  <Project Path="../2024/PuzzleRunner/PuzzleRunner.csproj" />
   <Project Path="../Libraries/Helpers/Helpers.csproj" />
-  <Project Path="AoCRunner/AoCRunner.csproj" />
   <Project Path="PuzzleDays/PuzzleDays.csproj" Id="1a656d33-7502-4f63-ae1d-d54b2da2cc5b" />
 </Solution>

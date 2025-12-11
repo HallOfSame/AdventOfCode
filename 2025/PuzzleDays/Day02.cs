@@ -1,5 +1,4 @@
 ﻿using Helpers.Structure;
-using InputStorageDatabase;
 
 namespace PuzzleDays;
 
@@ -11,9 +10,9 @@ public class Day02 : SingleExecutionPuzzle<Day02.State>
     {
         var result = 0L;
 
-        foreach (var range in InitialState.Ranges)
+        foreach (var (start, end) in InitialState.Ranges)
         {
-            var invalidIds = FindInvalidIdsInRange(range.start, range.end);
+            var invalidIds = FindInvalidIdsInRange(start, end);
 
             invalidIds.ForEach(x => result += x);
         }
@@ -48,9 +47,9 @@ public class Day02 : SingleExecutionPuzzle<Day02.State>
     {
         var result = 0L;
 
-        foreach (var range in InitialState.Ranges)
+        foreach (var (start, end) in InitialState.Ranges)
         {
-            var invalidIds = FindInvalidIdsInRangePart2(range.start, range.end);
+            var invalidIds = FindInvalidIdsInRangePart2(start, end);
 
             invalidIds.ForEach(x => result += x);
         }
