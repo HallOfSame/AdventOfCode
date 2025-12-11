@@ -21,13 +21,20 @@
                     <MudRadio Value="@PuzzleInputType.Personal">Personal</MudRadio>
                 </MudRadioGroup>
             </div>
-            <MudTextField T="string" Label="Input" Required @bind-Value="puzzleInput" Lines="10" AutoGrow />
+            <MudTextField T="string" Label="Input" Required @bind-Value="puzzleInput" @bind-Value:after="() => inputLoaded = false" Lines="10" AutoGrow />
         </MudExpansionPanel>
     </MudExpansionPanels>
     <br />
     @if (puzzleInput is not null)
     {
-        <PuzzleExecution Puzzle="puzzle" />
+        @if (!inputLoaded)
+        {
+            <MudButton OnClick="LoadInput" Variant="Variant.Filled" Color="Color.Primary">Load Input</MudButton>
+        }
+        else
+        {
+            <PuzzleExecution Puzzle="puzzle"/>
+        }
     }
 </MudPaper>
 
@@ -44,6 +51,7 @@
     private IPuzzle puzzle = null!;
     private string? puzzleInput;
     private PuzzleInputType inputType;
+    private bool inputLoaded;
 
     protected override void OnInitialized()
     {
@@ -56,5 +64,11 @@
         var inputData = await HttpClient.GetInput(puzzle.Info.Year, puzzle.Info.Day);
         puzzleInput = inputData;
         inputType = PuzzleInputType.Personal;
+    }
+
+    private async Task LoadInput()
+    {
+        await puzzle.LoadInput(puzzleInput!, inputType);
+        inputLoaded = true;
     }
 }
