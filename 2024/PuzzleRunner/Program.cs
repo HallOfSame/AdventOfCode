@@ -16,7 +16,9 @@ builder.Services.Configure<AoCSettings>(builder.Configuration);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents()
+    // Make sure even large text (inputs) get through
+    .AddHubOptions(opt => opt.MaximumReceiveMessageSize = null);
 builder.Services.AddMudServices();
 builder.Services.AddPuzzleStructure();
 builder.Services.AddPuzzlesFromAssembly(typeof(Day01).Assembly);

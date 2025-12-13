@@ -1,5 +1,6 @@
 ﻿@using Helpers.Drawing
 @using Helpers.Interfaces
+@using Helpers.Logging
 <div>
     <MudExpansionPanels MultiExpansion="true">
         <MudExpansionPanel Text="Actions" Expanded="true">
@@ -54,6 +55,13 @@
                 </div>
             }
         </MudExpansionPanel>
+        
+        <MudExpansionPanel Text="Progress Output">
+            @foreach (var text in progressText)
+            {
+                <MudText @key="progressText.IndexOf(text)">@text</MudText>
+            }
+        </MudExpansionPanel>
 
         @if (HasVisual)
         {
@@ -77,6 +85,8 @@
 </div>
 
 @inject IJSRuntime JsRuntime
+@inject ProgressLogger ProgressLogger
+@implements IDisposable
 @code {
     [Parameter]
     [EditorRequired]
@@ -93,6 +103,7 @@
     private readonly List<object> stateBeforeStep = [null!];
     private int currentStep;
     private readonly List<string> outputText = [];
+    private readonly List<string> progressText = [];
 
     private bool resetRequired;
     private bool DisablePrevStep => resetRequired || currentStep == 0;
@@ -108,11 +119,14 @@
         // ReSharper disable once SuspiciousTypeConversion.Global
         textVisualizer = Puzzle as IVisualizeText;
 
+        ProgressLogger.OnProgress += OnProgressOutput;
+
         base.OnInitialized();
     }
 
     private async Task ResetPuzzle()
     {
+        progressText.Clear();
         await Execution(stepExecutionPuzzle!.ResetToInitialState);
         resetRequired = false;
         currentStep = 0;
@@ -172,11 +186,13 @@
 
     private async Task ExecutePartOne()
     {
+        progressText.Clear();
         await Execution(async () => currentResult = await singleExecutionPuzzle!.ExecutePartOne());
     }
 
     private async Task ExecutePartTwo()
     {
+        progressText.Clear();
         await Execution(async () => currentResult = await singleExecutionPuzzle!.ExecutePartTwo());
     }
 
@@ -229,4 +245,13 @@
         return $"{currentResult!.ElapsedTime.Minutes:D2}m {currentResult.ElapsedTime.Seconds:D2}s {currentResult.ElapsedTime.Milliseconds:D3}ms {currentResult.ElapsedTime.Microseconds:D9}us";
     }
 
+    private void OnProgressOutput(object? _, (string text, MessageType type) progress)
+    {
+        progressText.Add($"{progress.type}: {progress.text}");
+    }
+
+    public void Dispose()
+    {
+        ProgressLogger.OnProgress -= OnProgressOutput;
+    }
 }
