@@ -75,7 +75,62 @@ public class Day07 : StepExecutionPuzzle<Day07.State>, IVisualize2d
 
     protected override async Task<(bool isComplete, string? result)> ExecutePuzzleStepPartTwo()
     {
-        throw new NotImplementedException();
+        // This half won't actually be a step-by-step process
+        return (true, GetNumberOfTimelines(CurrentState.Map.Single(x => x.Value == 'S')
+                                               .Key,
+                                           [])
+            .ToString());
+    }
+
+    private long GetNumberOfTimelines(Coordinate currentParticlePosition, Dictionary<Coordinate, long> memo)
+    {
+        if (memo.TryGetValue(currentParticlePosition, out var knownResult))
+        {
+            // Didn't test if this was needed, but it can't hurt
+            return knownResult;
+        }
+
+        if (!CurrentState.Map.ContainsKey(currentParticlePosition))
+        {
+            // Edge case, we split and were immediately off the map
+            memo[currentParticlePosition] = 1;
+            return 1;
+        }
+
+        var originalCallPosition = currentParticlePosition;
+
+        do
+        {
+            var nextPosition = currentParticlePosition.GetDirection(Direction.South);
+
+            if (!CurrentState.Map.TryGetValue(nextPosition, out var atNext))
+            {
+                // Base case, we got to the end of a run
+                memo[originalCallPosition] = 1;
+                return 1;
+            }
+
+            if (atNext == '.')
+            {
+                // Nothing interesting to do at this point
+                currentParticlePosition = nextPosition;
+                continue;
+            }
+
+            if (atNext == '^')
+            {
+                break;
+            }
+        } while (true);
+
+        // If we got here, we hit the opportunity to split
+        var splitLeft = currentParticlePosition.GetDirection(Direction.East);
+        var leftSplitTimelines = GetNumberOfTimelines(splitLeft, memo);
+        var splitRight = currentParticlePosition.GetDirection(Direction.West);
+        var rightSplitTimelines = GetNumberOfTimelines(splitRight, memo);
+        memo[originalCallPosition] = leftSplitTimelines + rightSplitTimelines;
+
+        return leftSplitTimelines + rightSplitTimelines;
     }
 
     protected override async Task<State> LoadInitialState(string puzzleInput)
@@ -96,6 +151,10 @@ public class Day07 : StepExecutionPuzzle<Day07.State>, IVisualize2d
     {
         public required Dictionary<Coordinate, char> Map { get; set; }
         public required HashSet<Coordinate> BeamLocations { get; set; }
+
+        /// <summary>
+        /// Used by part 1.
+        /// </summary>
         public int NumberOfSplits { get; set; }
     }
 }
