@@ -2,7 +2,9 @@
 @* Empty div to force the font to load before we draw *@
 <div style="font-family: square;"></div>
 <div>
-    <canvas id="canvasToDraw" style="border: 1px solid black;"></canvas>
+    <div style="overflow: auto;">
+        <canvas id="canvasToDraw" style="border: 1px solid black;"></canvas>
+    </div>
 
     <p>Mouse Coordinates: X = @mouseX, Y = @mouseY</p>
 </div>
@@ -14,7 +16,7 @@
     [Parameter]
     public DrawableCoordinate[] CoordinatesToDraw { get; set; } = [];
 
-    private DrawableCoordinate[] prevDrawableCoordinates = [];
+    private readonly DrawableCoordinate[] prevDrawableCoordinates = [];
 
     private double mouseX;
     private double mouseY;
@@ -25,7 +27,6 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        // TODO pixel size probably needs to scale based on input
         if (CoordinatesToDraw != prevDrawableCoordinates && CoordinatesToDraw.Length > 0)
         {
             if (objRef != null)
@@ -59,9 +60,12 @@
     {
         var image = new ImageData
             {
-                PixelSize = pixelSize,
                 Pixels = CoordinatesToDraw
             };
+
+        var pixelSizeFor1000Width = (int)Math.Min(25, Math.Max(1, Math.Floor(1000d / image.Width)));
+        pixelSize = pixelSizeFor1000Width;
+        image.PixelSize = pixelSize;
 
         await JsRuntime.InvokeVoidAsync("AocCanvas.draw", "canvasToDraw", image);
     }
