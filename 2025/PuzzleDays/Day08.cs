@@ -1,6 +1,5 @@
 ﻿using System.Globalization;
 using Helpers.Extensions;
-using Helpers.Heaps;
 using Helpers.Maps;
 using Helpers.Maps._3D;
 using Helpers.Structure;
@@ -36,7 +35,8 @@ public class Day08 : SingleExecutionPuzzle<Day08.State>
         return circuits.OrderByDescending(x => x.Count)
             .Select(x => x.Count)
             .Take(3)
-            .Aggregate(1, (curr, next) => curr * next).ToString();
+            .Aggregate(1, (curr, next) => curr * next)
+            .ToString();
     }
 
     private SimplePriorityQueue<(Coordinate3d, Coordinate3d), decimal> BuildMinDistanceHeap()
@@ -116,25 +116,24 @@ public class Day08 : SingleExecutionPuzzle<Day08.State>
         // Make more connections until we join two that were not previously in the same circuit
         while (true)
         {
-            while (true)
+            lastMin = heap.Dequeue();
+
+            connections[lastMin.Item1]
+                .Add(lastMin.Item2);
+            connections[lastMin.Item2]
+                .Add(lastMin.Item1);
+
+            var circuitOne = circuits.First(x => x.Contains(lastMin.Item1));
+
+            if (circuitOne.Contains(lastMin.Item2))
             {
-                lastMin = heap.Dequeue();
-
-                connections[lastMin.Item1]
-                    .Add(lastMin.Item2);
-                connections[lastMin.Item2]
-                    .Add(lastMin.Item1);
-
-                var circuitOne = circuits.First(x => x.Contains(lastMin.Item1));
-
-                if (!circuitOne.Contains(lastMin.Item2))
-                {
-                    break;
-                }
+                continue;
             }
 
-            // Re-calculate circuits
-            circuits = GetCircuits(connections);
+            var otherCircuit = circuits.First(x => x.Contains(lastMin.Item2));
+
+            circuitOne.UnionWith(otherCircuit);
+            circuits.Remove(otherCircuit);
 
             if (circuits.Count == 1)
             {
