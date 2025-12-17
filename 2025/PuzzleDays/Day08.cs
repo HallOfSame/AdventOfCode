@@ -1,4 +1,5 @@
-﻿using Helpers.Extensions;
+﻿using System.Globalization;
+using Helpers.Extensions;
 using Helpers.Heaps;
 using Helpers.Maps;
 using Helpers.Maps._3D;
@@ -14,15 +15,7 @@ public class Day08 : SingleExecutionPuzzle<Day08.State>
     protected override async Task<string> ExecutePuzzlePartOne()
     {
         // Determine distances
-        var heap = new SimplePriorityQueue<(Coordinate3d, Coordinate3d), decimal>();
-
-        foreach (var pair in InitialState.BoxLocations.Combinations(2))
-        {
-            var pairTuple = (pair.First(), pair.Last());
-            var distance = CoordinateHelper.EuclideanDistance(pairTuple.Item1, pairTuple.Item2);
-
-            heap.Enqueue(pairTuple, distance);
-        }
+        var heap = BuildMinDistanceHeap();
 
         // Start making connections
         var connections = InitialState.BoxLocations.ToDictionary(x => x, _ => new HashSet<Coordinate3d>());
@@ -38,6 +31,31 @@ public class Day08 : SingleExecutionPuzzle<Day08.State>
         }
 
         // Count circuits
+        var circuits = GetCircuits(connections);
+
+        return circuits.OrderByDescending(x => x.Count)
+            .Select(x => x.Count)
+            .Take(3)
+            .Aggregate(1, (curr, next) => curr * next).ToString();
+    }
+
+    private SimplePriorityQueue<(Coordinate3d, Coordinate3d), decimal> BuildMinDistanceHeap()
+    {
+        var heap = new SimplePriorityQueue<(Coordinate3d, Coordinate3d), decimal>();
+
+        foreach (var pair in InitialState.BoxLocations.Combinations(2))
+        {
+            var pairTuple = (pair.First(), pair.Last());
+            var distance = CoordinateHelper.EuclideanDistance(pairTuple.Item1, pairTuple.Item2);
+
+            heap.Enqueue(pairTuple, distance);
+        }
+
+        return heap;
+    }
+
+    private List<HashSet<Coordinate3d>> GetCircuits(Dictionary<Coordinate3d, HashSet<Coordinate3d>> connections)
+    {
         var visited = new HashSet<Coordinate3d>();
 
         var first = InitialState.BoxLocations.First();
@@ -68,16 +86,63 @@ public class Day08 : SingleExecutionPuzzle<Day08.State>
         }
 
         circuits.Add(currentCircuit);
-
-        return circuits.OrderByDescending(x => x.Count)
-            .Select(x => x.Count)
-            .Take(3)
-            .Aggregate(1, (curr, next) => curr * next).ToString();
+        return circuits;
     }
 
     protected override async Task<string> ExecutePuzzlePartTwo()
     {
-        throw new NotImplementedException();
+        // Determine distances
+        var heap = BuildMinDistanceHeap();
+
+        // Start making connections, we know from the puzzle we need to make at least the part 1 amount
+        var connections = InitialState.BoxLocations.ToDictionary(x => x, _ => new HashSet<Coordinate3d>());
+
+        for (var i = 0; i < InitialState.PartOneConnections; i++)
+        {
+            var nextMin = heap.Dequeue();
+
+            connections[nextMin.Item1]
+                .Add(nextMin.Item2);
+            connections[nextMin.Item2]
+                .Add(nextMin.Item1);
+        }
+
+        // Count circuits
+        var circuits = GetCircuits(connections);
+
+        (Coordinate3d, Coordinate3d) lastMin;
+
+        // Now the real part 2 begins
+        // Make more connections until we join two that were not previously in the same circuit
+        while (true)
+        {
+            while (true)
+            {
+                lastMin = heap.Dequeue();
+
+                connections[lastMin.Item1]
+                    .Add(lastMin.Item2);
+                connections[lastMin.Item2]
+                    .Add(lastMin.Item1);
+
+                var circuitOne = circuits.First(x => x.Contains(lastMin.Item1));
+
+                if (!circuitOne.Contains(lastMin.Item2))
+                {
+                    break;
+                }
+            }
+
+            // Re-calculate circuits
+            circuits = GetCircuits(connections);
+
+            if (circuits.Count == 1)
+            {
+                break;
+            }
+        }
+
+        return (lastMin.Item1.X * lastMin.Item2.X).ToString(CultureInfo.InvariantCulture);
     }
 
     protected override async Task<State> LoadInputState(string puzzleInput, PuzzleInputType inputType)
