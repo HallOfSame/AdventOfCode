@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Helpers.Drawing;
+using Helpers.Maps._3D;
 
 namespace Helpers.Maps;
 
@@ -13,6 +14,12 @@ public static class CoordinateHelper
                                         Coordinate c2)
     {
         return Math.Abs(c1.X - c2.X) + Math.Abs(c1.Y - c2.Y);
+    }
+
+    public static decimal EuclideanDistance(Coordinate3d c1, Coordinate3d c2)
+    {
+        return (decimal)Math.Sqrt(Math.Pow((double)c1.X - (double)c2.X, 2) + Math.Pow((double)c1.Y - (double)c2.Y, 2) +
+                                  Math.Pow((double)c1.Z - (double)c2.Z, 2));
     }
 
     public static Coordinate GetDirection(this Coordinate c, Direction d, int steps = 1)

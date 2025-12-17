@@ -16,7 +16,7 @@
     <MudExpansionPanels>
         <MudExpansionPanel Text="Input">
             <div class="d-flex">
-                <MudRadioGroup T="PuzzleInputType" @bind-Value="inputType">
+                <MudRadioGroup T="PuzzleInputType" @bind-Value="inputType" @bind-Value:after="() => inputLoaded = false">
                     <MudRadio Value="@PuzzleInputType.Example">Example</MudRadio>
                     <MudRadio Value="@PuzzleInputType.Personal">Personal</MudRadio>
                 </MudRadioGroup>
