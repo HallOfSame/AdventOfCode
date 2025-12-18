@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace Helpers.Extensions
@@ -8,21 +7,22 @@ namespace Helpers.Extensions
     {
         #region Class Methods
 
-        public static IEnumerable<IEnumerable<T>> Combinations<T>(this IEnumerable<T> elements,
+        public static IEnumerable<List<T>> Combinations<T>(this IEnumerable<T> elements,
                                                                   int length)
         {
             return length == 0
-                       ? new[]
-                         {
-                             Array.Empty<T>()
-                         }
-                       : elements.SelectMany((e,
-                                              i) => elements.Skip(i + 1)
-                                                            .Combinations(length - 1)
-                                                            .Select(c => new[]
-                                                                         {
-                                                                             e
-                                                                         }.Concat(c)));
+                ?
+                [
+                    []
+                ]
+                : elements.SelectMany((e,
+                                       i) => elements.Skip(i + 1)
+                                          .Combinations(length - 1)
+                                          .Select(c => new[]
+                                                      {
+                                                          e
+                                                      }.Concat(c)
+                                                      .ToList()));
         }
 
         public static IEnumerable<List<T>> Permutations<T>(this IEnumerable<T> list,
