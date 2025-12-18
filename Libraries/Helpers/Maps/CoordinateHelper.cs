@@ -40,6 +40,22 @@ public static class CoordinateHelper
             case Direction.West:
                 updatedCoordinate.X -= steps;
                 break;
+            case Direction.NorthEast:
+                updatedCoordinate.Y += steps;
+                updatedCoordinate.X += steps;
+                break;
+            case Direction.NorthWest:
+                updatedCoordinate.Y += steps;
+                updatedCoordinate.X -= steps;
+                break;
+            case Direction.SouthEast:
+                updatedCoordinate.Y -= steps;
+                updatedCoordinate.X += steps;
+                break;
+            case Direction.SouthWest:
+                updatedCoordinate.Y -= steps;
+                updatedCoordinate.X -= steps;
+                break;
             default:
                 throw new NotImplementedException();
         }
