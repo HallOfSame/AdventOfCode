@@ -62,7 +62,10 @@ namespace PuzzleDays
 
             foreach (var machine in InitialState.Machines)
             {
-                var min = GetMinButtonPressesForJoltage(machine);
+                // Uses a cool algorithm somebody described on Reddit
+                // It takes a bit of time (~10s) to run but that's probably more to do with how I set it up
+                // Much more interesting than "turn it into a sequence of equations and pass it to a python solver" that most people seemed to do
+                var min = GetMinPressesForJoltage(machine.GoodJoltageState, machine, [], 0);
                 logger.LogProgress($"Min was {min}");
 
                 result += min;
@@ -71,93 +74,114 @@ namespace PuzzleDays
             return result.ToString();
         }
 
-        private int GetMinButtonPressesForJoltage(Machine machine)
+        private static int GetMinPressesForJoltage(JoltageCounter expectedCounter, Machine machine, Dictionary<(JoltageCounter, Machine), int> memo, int depth)
         {
-            // TODO this takes too long to run
-            // My current guess is something like:
-            // There's some number of presses that hits a lower joltage state where you repeat it enough times for the answer
-            // So you really have to find this magic sequence / state and then multiply how many times it takes to get there
-            // I'm not sure if it's like an LCM or something else though
-            // Maybe when we check a state we should be doing something like check if each index divides into it cleanly
-            // I.e. if expected[i] / curr[i] = x for every index, then result = currentPresses * x
-
-            // This didn't work
-            // Maybe it's like, find which buttons can get counter idx 0 to the right value?
-            // Then see where everything else is from there or something?
-            // Or somehow isolate hitting a single button over and over
-            // Order doesn't matter anymore
-            // So maybe it's like when you press a button you might as well press it until a counter is correct
-            // So our queue becomes press 15 (e.g.) times instead of once
-
-            var goodState = machine.GoodJoltageState.Current;
-            var queue = new Queue<(Button btn, JoltageCounter joltState, int pressCount)>();
-            var visited = new HashSet<(Button, JoltageCounter)>();
-
-            foreach (var button in machine.Buttons)
+            if (expectedCounter.Current.ToArray()
+                .All(x => x == 0))
             {
-                var emptyCounters = new JoltageCounter(machine.GoodJoltageState.Size);
-                queue.Enqueue((button, emptyCounters, 1));
-                visited.Add((button, emptyCounters));
+                // If we have nothing to add, return 0
+                return 0;
             }
 
-            while (true)
+            if (memo.TryGetValue((expectedCounter, machine), out var existingCalc))
             {
-                var next = queue.Dequeue();
+                return existingCalc;
+            }
 
-                var newState = next.joltState.Press(next.btn);
-                var comparison = newState.Matches(machine.GoodJoltageState);
+            // So first we figure out which buttons need to be pressed an odd number of times
+            // If you think of it like part 1, it's the same as making sure these lights end up on
+            // So first figure out what light setting this counter corresponds to
+            // I.e. # when counter value is odd, . when it is even
+            var targetLights = GetLightPolarity(expectedCounter);
 
-                if (comparison == 0)
+            // Find every combination of buttons that ends up with the desired light state
+            // We either do or don't hit a button since hitting it twice does nothing
+            // So we have 2^x possible combinations where x is the number of buttons
+            var allWaysToGetPolarity =
+                RecursiveGetPressesForState([], 0, machine, new IndicatorLights(targetLights.Size), targetLights);
+
+            var minPresses = int.MaxValue;
+
+            // For each way we can do the odd presses
+            foreach (var startPoint in allWaysToGetPolarity)
+            {
+                // First actually press all of them
+                var presses = startPoint.Count;
+                var counterWithThesePresses =
+                    startPoint.Aggregate(new JoltageCounter(expectedCounter.Size), (x, btn) => x.Press(btn, 1));
+
+                // And make sure that we haven't passed the counter in any position
+                if (counterWithThesePresses.Matches(expectedCounter) == 1)
                 {
-                    return next.pressCount;
-                }
-
-                if (comparison == 1)
-                {
-                    // Something is too high so stop looking down this line
+                    // Something got too high
                     continue;
                 }
 
-                var current = newState.Current;
-                if (current[0] != 0)
+                // Okay now every counter should be an even number
+                // We can calculate the necessary even number of button presses to get the remaining joltage
+                // But since they're all even, it can be simplified as 2x the number of presses to get 1/2 that counter value
+                // And we can recursively call this function to calculate that
+                var remaining = new JoltageCounter(Enumerable.Range(0, expectedCounter.Size)
+                                                       .Select(idx => (expectedCounter.Current[idx] -
+                                                                       counterWithThesePresses.Current[idx]) / 2)
+                                                       .ToArray());
+
+                var pressesForRemaining = GetMinPressesForJoltage(remaining, machine, memo, depth + 1);
+
+                // Guard against running into a case where we couldn't actually reach that remaining value
+                if (pressesForRemaining == int.MaxValue)
                 {
-                    var mod = Math.DivRem(machine.GoodJoltageState.Current[0], current[0]);
-                    var i = 1;
-                    var found = mod.Remainder == 0;
-
-                    while (mod.Remainder == 0 && i < current.Length)
-                    {
-                        if (current[i] == 0)
-                        {
-                            found = false;
-                            break;
-                        }
-
-                        var nextMod = Math.DivRem(machine.GoodJoltageState.Current[i], newState.Current[i]);
-
-                        if (nextMod.Quotient != mod.Quotient)
-                        {
-                            found = false;
-                            break;
-                        }
-
-                        mod = nextMod;
-                    }
-
-                    if (found)
-                    {
-                        var z = 4;
-                    }
+                    continue;
                 }
 
-                foreach (var button in machine.Buttons)
-                {
-                    if (visited.Add((button, newState)))
-                    {
-                        queue.Enqueue((button, newState, next.pressCount + 1));
-                    }
-                }
+                presses += pressesForRemaining * 2;
+
+                minPresses = Math.Min(presses, minPresses);
             }
+
+            memo[(expectedCounter, machine)] = minPresses;
+
+            return minPresses;
+        }
+
+        private static List<List<Button>> RecursiveGetPressesForState(List<Button> pressedButtons,
+                                                                      int currentIndex,
+                                                                      Machine machine,
+                                                                      IndicatorLights currentState,
+                                                                      IndicatorLights targetState)
+        {
+            // We've gone through all the buttons
+            if (currentIndex == machine.Buttons.Count)
+            {
+                // If it matches, our list is a valid way to get what we want
+                if (currentState.Matches(targetState))
+                {
+                    return [pressedButtons.ToList()];
+                }
+
+                // Otherwise, nothing to return
+                return [];
+            }
+
+            var withButtonNotPressed =
+                RecursiveGetPressesForState(pressedButtons, currentIndex + 1, machine, currentState, targetState);
+
+            var withPressState = currentState.Press(machine.Buttons[currentIndex]);
+            pressedButtons.Add(machine.Buttons[currentIndex]);
+            var withButtonPressed =
+                RecursiveGetPressesForState(pressedButtons, currentIndex + 1, machine, withPressState, targetState);
+
+            pressedButtons.Remove(machine.Buttons[currentIndex]);
+
+            return [..withButtonNotPressed, ..withButtonPressed];
+        }
+
+        private static IndicatorLights GetLightPolarity(JoltageCounter counter)
+        {
+            // Return a light where 1 is odd joltage and 0 is even
+            return new IndicatorLights(counter.Current.ToArray()
+                                           .Select(x => x % 2)
+                                           .ToArray());
         }
 
         public class State
@@ -296,13 +320,13 @@ namespace PuzzleDays
                 return under ? -1 : 0;
             }
 
-            public JoltageCounter Press(Button button)
+            public JoltageCounter Press(Button button, int times)
             {
                 var newStatus = counterStatus.ToArray();
 
                 foreach (var counterIndex in button.Indices)
                 {
-                    newStatus[counterIndex] += 1;
+                    newStatus[counterIndex] += times;
                 }
 
                 return new JoltageCounter(newStatus);
