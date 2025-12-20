@@ -59,7 +59,7 @@
         <MudExpansionPanel Text="Progress Output">
             @foreach (var text in progressText)
             {
-                <MudText @key="progressText.IndexOf(text)">@text</MudText>
+                <MudText @key="Guid.NewGuid()">@text</MudText>
             }
         </MudExpansionPanel>
 
