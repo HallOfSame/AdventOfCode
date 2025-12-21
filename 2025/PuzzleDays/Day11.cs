@@ -39,7 +39,44 @@ public class Day11 : SingleExecutionPuzzle<Day11.State>
 
     protected override async Task<string> ExecutePuzzlePartTwo()
     {
-        throw new NotImplementedException();
+        var start = InitialState.Nodes.First(x => x.Label == "svr");
+
+        return FindPathsPartTwo(start, false, false, [])
+            .ToString();
+    }
+
+    private long FindPathsPartTwo(Node current, bool hitDac, bool hitFft, Dictionary<(Node, bool, bool), long> memo)
+    {
+        if (memo.TryGetValue((current, hitDac, hitFft), out var existing))
+        {
+            return existing;
+        }
+
+        if (current.Label == "dac")
+        {
+            hitDac = true;
+        }
+
+        if (current.Label == "fft")
+        {
+            hitFft = true;
+        }
+
+        if (current.Label == "out")
+        {
+            return hitDac && hitFft ? 1 : 0;
+        }
+
+        var result = 0L;
+
+        foreach (var connected in current.Connections)
+        {
+            result += FindPathsPartTwo(connected, hitDac, hitFft, memo);
+        }
+
+        memo[(current, hitDac, hitFft)] = result;
+
+        return result;
     }
 
     protected override async Task<State> LoadInputState(string puzzleInput, PuzzleInputType inputType)
